@@ -1,0 +1,1493 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>OTA手数料管理システム｜昼神温泉 四季の織 はなや</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@300;400;500;700&family=Noto+Serif+JP:wght@400;700&family=JetBrains+Mono:wght@400;600&display=swap');
+
+  :root {
+    --bg: #0f1117;
+    --surface: #181c27;
+    --surface2: #1e2333;
+    --border: #2a3050;
+    --text: #e8eaf0;
+    --text-muted: #7a83a6;
+    --accent-blue: #4f8ef7;
+    --accent-green: #34c77b;
+    --accent-orange: #f5a623;
+    --accent-red: #e05a5a;
+    --accent-purple: #9b71f0;
+    --rakuten: #bf0000;
+    --jalan: #00a040;
+    --ikyu: #c8a96e;
+    --gold: #d4a843;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Noto Sans JP', sans-serif;
+    font-size: 14px;
+    line-height: 1.6;
+    min-height: 100vh;
+  }
+
+  /* ヘッダー */
+  .header {
+    background: linear-gradient(135deg, #1a0a0a 0%, #0f1117 50%, #0a1225 100%);
+    border-bottom: 1px solid var(--border);
+    padding: 20px 32px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    backdrop-filter: blur(10px);
+  }
+
+  .header-left h1 {
+    font-family: 'Noto Serif JP', serif;
+    font-size: 18px;
+    color: var(--gold);
+    letter-spacing: 0.05em;
+  }
+
+  .header-left p {
+    font-size: 11px;
+    color: var(--text-muted);
+    margin-top: 2px;
+    font-family: 'JetBrains Mono', monospace;
+  }
+
+  .header-badge {
+    background: linear-gradient(135deg, var(--rakuten), #8a0000);
+    color: white;
+    padding: 6px 14px;
+    border-radius: 20px;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.05em;
+  }
+
+  /* タブナビ */
+  .tab-nav {
+    display: flex;
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+    padding: 0 32px;
+    gap: 4px;
+    overflow-x: auto;
+  }
+
+  .tab-btn {
+    padding: 14px 22px;
+    background: none;
+    border: none;
+    color: var(--text-muted);
+    cursor: pointer;
+    font-family: 'Noto Sans JP', sans-serif;
+    font-size: 13px;
+    font-weight: 500;
+    border-bottom: 2px solid transparent;
+    transition: all 0.2s;
+    white-space: nowrap;
+  }
+
+  .tab-btn:hover { color: var(--text); }
+  .tab-btn.active { color: var(--accent-blue); border-bottom-color: var(--accent-blue); }
+
+  /* コンテンツ */
+  .content {
+    max-width: 1400px;
+    margin: 0 auto;
+    padding: 32px;
+  }
+
+  .tab-panel { display: none; }
+  .tab-panel.active { display: block; }
+
+  /* セクションタイトル */
+  .section-title {
+    font-family: 'Noto Serif JP', serif;
+    font-size: 20px;
+    color: var(--text);
+    margin-bottom: 24px;
+    padding-bottom: 12px;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .section-title .dot {
+    width: 8px; height: 8px;
+    border-radius: 50%;
+    background: var(--accent-blue);
+  }
+
+  /* カード */
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 24px;
+    margin-bottom: 20px;
+  }
+
+  .card-title {
+    font-size: 13px;
+    font-weight: 700;
+    color: var(--text-muted);
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    margin-bottom: 16px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  /* OTAバッジ */
+  .badge-rakuten { background: var(--rakuten); color: white; padding: 3px 10px; border-radius: 4px; font-size: 11px; font-weight: 700; }
+  .badge-jalan { background: var(--jalan); color: white; padding: 3px 10px; border-radius: 4px; font-size: 11px; font-weight: 700; }
+  .badge-ikyu { background: var(--ikyu); color: #1a1000; padding: 3px 10px; border-radius: 4px; font-size: 11px; font-weight: 700; }
+
+  /* 手数料テーブル */
+  .fee-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 13px;
+  }
+
+  .fee-table th {
+    background: var(--surface2);
+    color: var(--text-muted);
+    font-weight: 500;
+    padding: 10px 14px;
+    text-align: left;
+    font-size: 11px;
+    letter-spacing: 0.05em;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .fee-table td {
+    padding: 11px 14px;
+    border-bottom: 1px solid var(--border);
+    vertical-align: middle;
+  }
+
+  .fee-table tr:last-child td { border-bottom: none; }
+  .fee-table tr:hover td { background: rgba(79,142,247,0.04); }
+
+  .rate-val {
+    font-family: 'JetBrains Mono', monospace;
+    font-weight: 600;
+    color: var(--accent-orange);
+    font-size: 14px;
+  }
+
+  .tax-badge {
+    font-size: 10px;
+    padding: 2px 7px;
+    border-radius: 3px;
+    font-weight: 600;
+  }
+  .tax-ka { background: rgba(79,142,247,0.15); color: var(--accent-blue); }
+  .tax-fu { background: rgba(52,199,123,0.15); color: var(--accent-green); }
+
+  /* グリッド */
+  .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+  .grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 20px; }
+
+  @media (max-width: 900px) {
+    .grid-2, .grid-3 { grid-template-columns: 1fr; }
+  }
+
+  /* ====== シミュレーター ====== */
+  .sim-layout {
+    display: grid;
+    grid-template-columns: 380px 1fr;
+    gap: 24px;
+    align-items: start;
+  }
+
+  @media (max-width: 1100px) {
+    .sim-layout { grid-template-columns: 1fr; }
+  }
+
+  .sim-label {
+    font-size: 12px;
+    color: var(--text-muted);
+    margin-bottom: 6px;
+    font-weight: 500;
+  }
+
+  .sim-input {
+    width: 100%;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    color: var(--text);
+    padding: 10px 14px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 14px;
+    outline: none;
+    transition: border-color 0.2s;
+    margin-bottom: 14px;
+  }
+
+  .sim-input:focus { border-color: var(--accent-blue); }
+
+  .sim-select {
+    width: 100%;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    color: var(--text);
+    padding: 10px 14px;
+    font-family: 'Noto Sans JP', sans-serif;
+    font-size: 13px;
+    outline: none;
+    cursor: pointer;
+    margin-bottom: 14px;
+    appearance: none;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%237a83a6' stroke-width='1.5' fill='none'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 14px center;
+  }
+
+  .sim-select:focus { border-color: var(--accent-blue); }
+
+  .sim-row { margin-bottom: 14px; }
+
+  .input-with-unit {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 14px;
+  }
+
+  .input-with-unit .sim-input { margin-bottom: 0; flex: 1; }
+  .input-with-unit .unit { color: var(--text-muted); font-size: 13px; white-space: nowrap; }
+
+  .calc-btn {
+    width: 100%;
+    background: linear-gradient(135deg, var(--accent-blue), #3a6fd8);
+    border: none;
+    border-radius: 10px;
+    color: white;
+    padding: 14px;
+    font-family: 'Noto Sans JP', sans-serif;
+    font-size: 15px;
+    font-weight: 700;
+    cursor: pointer;
+    margin-top: 8px;
+    letter-spacing: 0.05em;
+    transition: opacity 0.2s, transform 0.1s;
+  }
+
+  .calc-btn:hover { opacity: 0.9; transform: translateY(-1px); }
+  .calc-btn:active { transform: translateY(0); }
+
+  /* 結果パネル */
+  .result-panel {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 24px;
+  }
+
+  .result-hero {
+    background: linear-gradient(135deg, #0d2040, #1a2e10);
+    border-radius: 10px;
+    padding: 24px;
+    margin-bottom: 20px;
+    text-align: center;
+    border: 1px solid rgba(79,142,247,0.2);
+  }
+
+  .result-hero-label {
+    font-size: 12px;
+    color: var(--text-muted);
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    margin-bottom: 8px;
+  }
+
+  .result-hero-val {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 42px;
+    font-weight: 600;
+    color: var(--accent-green);
+    line-height: 1;
+    margin-bottom: 8px;
+  }
+
+  .result-hero-rate {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 18px;
+    color: var(--accent-orange);
+  }
+
+  .result-breakdown {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .rb-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 9px 12px;
+    border-radius: 6px;
+    background: var(--surface2);
+  }
+
+  .rb-row.total {
+    background: rgba(79,142,247,0.1);
+    border: 1px solid rgba(79,142,247,0.2);
+    margin-top: 8px;
+  }
+
+  .rb-row.gross {
+    background: rgba(52,199,123,0.1);
+    border: 1px solid rgba(52,199,123,0.2);
+  }
+
+  .rb-label { color: var(--text-muted); font-size: 12px; }
+  .rb-val {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--text);
+  }
+
+  .rb-val.red { color: var(--accent-red); }
+  .rb-val.green { color: var(--accent-green); }
+  .rb-val.blue { color: var(--accent-blue); }
+  .rb-val.orange { color: var(--accent-orange); }
+
+  .rb-divider { height: 1px; background: var(--border); margin: 6px 0; }
+
+  /* アラート */
+  .alert {
+    background: rgba(245,166,35,0.1);
+    border: 1px solid rgba(245,166,35,0.3);
+    border-radius: 8px;
+    padding: 12px 16px;
+    font-size: 12px;
+    color: var(--accent-orange);
+    margin-bottom: 16px;
+    display: flex;
+    gap: 8px;
+    align-items: flex-start;
+  }
+
+  .alert-info {
+    background: rgba(79,142,247,0.08);
+    border-color: rgba(79,142,247,0.2);
+    color: var(--accent-blue);
+  }
+
+  /* NEW バッジ */
+  .new-badge {
+    background: var(--accent-red);
+    color: white;
+    font-size: 9px;
+    font-weight: 700;
+    padding: 2px 6px;
+    border-radius: 3px;
+    letter-spacing: 0.05em;
+    vertical-align: middle;
+  }
+
+  /* キャンペーン枠選択 */
+  .frame-selector {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    margin-bottom: 14px;
+  }
+
+  .frame-option {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 14px;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+
+  .frame-option:hover { border-color: var(--accent-blue); }
+  .frame-option.selected {
+    border-color: var(--accent-blue);
+    background: rgba(79,142,247,0.08);
+  }
+
+  .frame-option input[type="radio"] { accent-color: var(--accent-blue); }
+  .frame-option-label { font-size: 12px; color: var(--text); flex: 1; }
+  .frame-option-rate { font-family: 'JetBrains Mono', monospace; font-size: 13px; color: var(--accent-orange); font-weight: 600; }
+
+  /* ヒント */
+  .hint {
+    font-size: 11px;
+    color: var(--text-muted);
+    margin-top: -10px;
+    margin-bottom: 14px;
+    padding-left: 4px;
+  }
+
+  /* 変更通知ボックス */
+  .change-box {
+    background: linear-gradient(135deg, rgba(191,0,0,0.08), rgba(191,0,0,0.03));
+    border: 1px solid rgba(191,0,0,0.25);
+    border-radius: 10px;
+    padding: 16px 20px;
+    margin-bottom: 20px;
+  }
+
+  .change-box-title {
+    font-size: 13px;
+    font-weight: 700;
+    color: #e06060;
+    margin-bottom: 10px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+
+  .change-box ul {
+    list-style: none;
+    font-size: 12px;
+    color: var(--text-muted);
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+  }
+
+  .change-box ul li::before { content: "→ "; color: #e06060; }
+
+  /* ステータスインジケーター */
+  .status-dot {
+    width: 7px; height: 7px;
+    border-radius: 50%;
+    display: inline-block;
+    margin-right: 5px;
+  }
+  .status-confirmed { background: var(--accent-green); }
+  .status-unconfirmed { background: var(--accent-orange); animation: pulse 2s infinite; }
+  .status-pending { background: var(--text-muted); }
+
+  @keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.4; }
+  }
+
+  /* 区切り */
+  .divider { height: 1px; background: var(--border); margin: 24px 0; }
+
+  /* フォームグループ */
+  .form-group-title {
+    font-size: 11px;
+    font-weight: 700;
+    color: var(--text-muted);
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    margin-bottom: 12px;
+    margin-top: 4px;
+    padding-bottom: 6px;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .hidden { display: none; }
+
+  /* SCW補足 */
+  .scw-detail {
+    background: var(--surface2);
+    border-radius: 8px;
+    padding: 14px;
+    margin-bottom: 14px;
+    font-size: 12px;
+  }
+
+  .scw-detail-row {
+    display: flex;
+    justify-content: space-between;
+    padding: 4px 0;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .scw-detail-row:last-child { border-bottom: none; }
+  .scw-detail-key { color: var(--text-muted); }
+  .scw-detail-val { font-family: 'JetBrains Mono', monospace; color: var(--text); font-weight: 600; }
+
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div class="header-left">
+    <h1>OTA手数料管理システム</h1>
+    <p>昼神温泉 四季の織 はなや（温泉宿カテゴリ）｜2026年7月版</p>
+  </div>
+  <div class="header-badge">楽天7月資料反映済</div>
+</div>
+
+<div class="tab-nav">
+  <button class="tab-btn active" onclick="switchTab('simulator')">💹 シミュレーター</button>
+  <button class="tab-btn" onclick="switchTab('rakuten')">🔴 楽天トラベル</button>
+  <button class="tab-btn" onclick="switchTab('jalan')">🟢 じゃらんnet</button>
+  <button class="tab-btn" onclick="switchTab('ikyu')">🟡 一休.com / Yahoo!</button>
+  <button class="tab-btn" onclick="switchTab('notes')">📋 確認事項</button>
+</div>
+
+<div class="content">
+
+  <!-- ========== シミュレーター ========== -->
+  <div id="tab-simulator" class="tab-panel active">
+
+    <div class="section-title"><span class="dot"></span>粗利シミュレーター</div>
+
+    <div class="sim-layout">
+      <!-- 左：入力 -->
+      <div>
+        <div class="card">
+          <div class="form-group-title">① OTA・キャンペーン選択</div>
+
+          <div class="sim-label">OTA</div>
+          <select class="sim-select" id="ota-select" onchange="onOtaChange()">
+            <option value="rakuten">🔴 楽天トラベル</option>
+            <option value="jalan">🟢 じゃらんnet</option>
+            <option value="ikyu">🟡 一休.com / Yahoo!トラベル</option>
+          </select>
+
+          <!-- 楽天キャンペーン -->
+          <div id="rakuten-campaign">
+            <div class="sim-label">キャンペーン枠 <span class="new-badge">2026年7月改定</span></div>
+            <div class="frame-selector" id="frame-selector">
+              <label class="frame-option selected" onclick="selectFrame(this, 'none')">
+                <input type="radio" name="frame" value="none" checked>
+                <span class="frame-option-label">キャンペーン不参加（通常）</span>
+                <span class="frame-option-rate">—</span>
+              </label>
+              <label class="frame-option" onclick="selectFrame(this, 'gobi_only')">
+                <input type="radio" name="frame" value="gobi_only">
+                <span class="frame-option-label">5と0のつく日のみ（単品）</span>
+                <span class="frame-option-rate">+5%</span>
+              </label>
+              <label class="frame-option" onclick="selectFrame(this, 'set1')">
+                <input type="radio" name="frame" value="set1">
+                <span class="frame-option-label">枠①：5と0日10% ＋ SCW20%</span>
+                <span class="frame-option-rate">+5/5%</span>
+              </label>
+              <label class="frame-option" onclick="selectFrame(this, 'set2')">
+                <input type="radio" name="frame" value="set2">
+                <span class="frame-option-label">枠②：5と0日10% ＋ SCW10%（除外日なし）★推奨</span>
+                <span class="frame-option-rate">+5/5%</span>
+              </label>
+              <label class="frame-option" onclick="selectFrame(this, 'set3')">
+                <input type="radio" name="frame" value="set3">
+                <span class="frame-option-label">枠③：5と0日10% ＋ SCW10%（連休除外）</span>
+                <span class="frame-option-rate">+5/5%</span>
+              </label>
+            </div>
+
+            <!-- SCW期間フラグ -->
+            <div id="scw-flag-row" class="hidden">
+              <div class="sim-label">予約タイミング</div>
+              <select class="sim-select" id="scw-timing">
+                <option value="gobi">5と0のつく日（48時間）</option>
+                <option value="scw">スペシャルクーポンWeek期間（月末）</option>
+              </select>
+              <div class="hint">※SCW期間はシステム利用料5%・割引率はセット枠による</div>
+            </div>
+          </div>
+
+          <!-- じゃらんキャンペーン -->
+          <div id="jalan-campaign" class="hidden">
+            <div class="sim-label">キャンペーン</div>
+            <select class="sim-select" id="jalan-camp">
+              <option value="none">キャンペーン不参加</option>
+              <option value="special_week">スペシャルウィーク（5%割引＋クーポン原資）</option>
+              <option value="otoku_10days">お得な10日間（5%割引＋クーポン原資）</option>
+              <option value="tabi_ouen">旅応援クーポン特集（クーポン原資のみ）</option>
+            </select>
+
+            <div id="jalan-coupon-row" class="hidden">
+              <div class="sim-label">クーポン原資（円）</div>
+              <select class="sim-select" id="jalan-coupon-amt">
+                <option value="500">500円</option>
+                <option value="700">700円</option>
+                <option value="1000" selected>1,000円</option>
+                <option value="1400">1,400円</option>
+                <option value="2000">2,000円</option>
+                <option value="2500">2,500円</option>
+                <option value="3000">3,000円</option>
+                <option value="4000">4,000円</option>
+                <option value="5000">5,000円</option>
+                <option value="7000">7,000円</option>
+                <option value="10000">10,000円</option>
+                <option value="15000">15,000円</option>
+              </select>
+            </div>
+          </div>
+
+          <!-- 一休 -->
+          <div id="ikyu-campaign" class="hidden">
+            <div class="sim-label">セール・特典</div>
+            <select class="sim-select" id="ikyu-camp">
+              <option value="none">通常</option>
+              <option value="24h">24時間限定セール（ポイント10%施設負担）</option>
+              <option value="summer">夏旅/GoGoセール（ポイント5%施設負担）</option>
+              <option value="selection">セレクションセール（ポイント10%施設負担）</option>
+              <option value="premium">一休プレミアム10days（ポイント10%施設負担）</option>
+              <option value="yahoo_pack">Yahoo!パック（基本手数料13.5%）</option>
+            </select>
+          </div>
+
+          <div class="divider"></div>
+          <div class="form-group-title">② 宿泊条件</div>
+
+          <div class="sim-label">宿泊人数</div>
+          <select class="sim-select" id="guests">
+            <option value="1">1名</option>
+            <option value="2" selected>2名以上（デフォルト：90%以上）</option>
+          </select>
+
+          <div class="sim-label">泊数</div>
+          <div class="input-with-unit">
+            <input class="sim-input" type="number" id="nights" value="1" min="1">
+            <span class="unit">泊</span>
+          </div>
+
+          <div class="sim-label">1名1泊 定価（税込）</div>
+          <div class="input-with-unit">
+            <input class="sim-input" type="number" id="price-per" value="20000" step="1000">
+            <span class="unit">円</span>
+          </div>
+
+          <div id="rakuten-card-row">
+            <div class="sim-label">事前カード決済割合</div>
+            <select class="sim-select" id="card-ratio">
+              <option value="0">なし（0%）</option>
+              <option value="0.5">50%</option>
+              <option value="1" selected>100%（全予約）</option>
+            </select>
+            <div class="hint" id="card-hint">※月1回入金：1.9%、月2回：2.4%（税抜）</div>
+          </div>
+
+          <div class="divider"></div>
+          <div class="form-group-title">③ 変動原価（税込）</div>
+
+          <div class="sim-label">食材費</div>
+          <div class="input-with-unit">
+            <input class="sim-input" type="number" id="food-cost" value="6000" step="500">
+            <span class="unit">円/名</span>
+          </div>
+
+          <div class="sim-label">アメニティ</div>
+          <div class="input-with-unit">
+            <input class="sim-input" type="number" id="amenity-cost" value="500" step="100">
+            <span class="unit">円/名</span>
+          </div>
+
+          <div class="sim-label">清掃費</div>
+          <div class="input-with-unit">
+            <input class="sim-input" type="number" id="clean-cost" value="2000" step="500">
+            <span class="unit">円/泊</span>
+          </div>
+
+          <div class="sim-label">その他変動原価（税込・合計）</div>
+          <div class="input-with-unit">
+            <input class="sim-input" type="number" id="other-cost" value="0" step="500">
+            <span class="unit">円</span>
+          </div>
+
+          <button class="calc-btn" onclick="calculate()">計算する</button>
+        </div>
+      </div>
+
+      <!-- 右：結果 -->
+      <div>
+        <div class="result-panel">
+          <div style="font-size:13px; color:var(--text-muted); font-weight:700; letter-spacing:0.08em; text-transform:uppercase; margin-bottom:16px;">計算結果</div>
+
+          <div class="result-hero">
+            <div class="result-hero-label">税抜粗利益</div>
+            <div class="result-hero-val" id="res-gross">—</div>
+            <div class="result-hero-rate" id="res-rate">粗利率 —</div>
+          </div>
+
+          <div class="result-breakdown" id="res-breakdown">
+            <div style="color:var(--text-muted); font-size:12px; text-align:center; padding:20px;">
+              条件を入力して「計算する」を押してください
+            </div>
+          </div>
+        </div>
+
+        <!-- キャンペーン詳細説明 -->
+        <div id="campaign-detail-box" class="card hidden" style="margin-top:20px;">
+          <div class="card-title">選択中キャンペーンの詳細</div>
+          <div id="campaign-detail-content"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ========== 楽天トラベル ========== -->
+  <div id="tab-rakuten" class="tab-panel">
+
+    <div class="section-title"><span class="dot" style="background:var(--rakuten)"></span>楽天トラベル 手数料体系</div>
+
+    <div class="change-box">
+      <div class="change-box-title">🔴 2026年7月 構造変更（公式資料確認済）</div>
+      <ul>
+        <li>「5と0のつく日＋スペシャルクーポンWeek」のセット販売枠が新設（7月資料で確認）</li>
+        <li>SCW期間中の楽天原資クーポン（リワード）が5%→7%に+2%UP</li>
+        <li>自動継続購入機能のみの販売（毎月自動更新）</li>
+        <li>販促システム利用料の計算ベース：<strong>クーポン割引前の税込売上</strong>（公式確認済）</li>
+      </ul>
+    </div>
+
+    <div class="grid-2">
+      <div class="card">
+        <div class="card-title"><span class="badge-rakuten">固定手数料</span></div>
+        <table class="fee-table">
+          <thead>
+            <tr>
+              <th>費目</th><th>料率</th><th>税区分</th><th>備考</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>送客手数料（1名）</td>
+              <td><span class="rate-val">7%</span></td>
+              <td><span class="tax-badge tax-ka">課税</span></td>
+              <td>税抜売上ベース</td>
+            </tr>
+            <tr>
+              <td>送客手数料（2名以上）</td>
+              <td><span class="rate-val">8.25%</span></td>
+              <td><span class="tax-badge tax-ka">課税</span></td>
+              <td>税抜売上ベース／はなや主力</td>
+            </tr>
+            <tr>
+              <td>カード決済手数料（月1回入金）</td>
+              <td><span class="rate-val">1.9%</span></td>
+              <td><span class="tax-badge tax-ka">課税</span></td>
+              <td>税抜売上ベース</td>
+            </tr>
+            <tr>
+              <td>カード決済手数料（月2回入金）</td>
+              <td><span class="rate-val">2.4%</span></td>
+              <td><span class="tax-badge tax-ka">課税</span></td>
+              <td>税抜売上ベース</td>
+            </tr>
+            <tr>
+              <td>ポイント原資</td>
+              <td><span class="rate-val">1%</span></td>
+              <td><span class="tax-badge tax-fu">不課税</span></td>
+              <td>そのまま費用加算</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="card">
+        <div class="card-title"><span class="badge-rakuten">キャンペーン手数料（温泉宿）</span> <span class="new-badge">2026年7月改定</span></div>
+        <table class="fee-table">
+          <thead>
+            <tr><th>企画</th><th>システム利用料</th><th>割引負担</th><th>楽天原資</th></tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>5と0のつく日</td>
+              <td><span class="rate-val">5%</span></td>
+              <td>10%割引</td>
+              <td>5%</td>
+            </tr>
+            <tr>
+              <td>SCW（枠①20%）</td>
+              <td><span class="rate-val">5%</span></td>
+              <td>20%割引</td>
+              <td>10%</td>
+            </tr>
+            <tr>
+              <td>SCW（枠②③10%）</td>
+              <td><span class="rate-val">5%</span></td>
+              <td>10%割引</td>
+              <td>7%</td>
+            </tr>
+          </tbody>
+        </table>
+        <div class="alert alert-info" style="margin-top:14px; margin-bottom:0;">
+          ℹ️ システム利用料の計算ベース：<strong>クーポン割引前の税込売上</strong>（公式資料p.47で確認）
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-title"><span class="badge-rakuten">セット枠詳細比較</span>（温泉宿カテゴリ）</div>
+      <table class="fee-table">
+        <thead>
+          <tr>
+            <th>枠</th>
+            <th>5と0のつく日</th>
+            <th>SCW割引率</th>
+            <th>SCW除外日</th>
+            <th>SCWシステム利用料</th>
+            <th>楽天原資（SCW期）</th>
+            <th>はなや向け</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>枠①</td>
+            <td>10%割引</td>
+            <td><span class="rate-val">20%</span></td>
+            <td>8/13〜15、9/18〜22</td>
+            <td>5%</td>
+            <td>10%</td>
+            <td>大幅割引・高コスト</td>
+          </tr>
+          <tr style="background:rgba(79,142,247,0.04);">
+            <td><strong>枠②★</strong></td>
+            <td>10%割引</td>
+            <td><span class="rate-val">10%</span></td>
+            <td><strong>なし</strong></td>
+            <td>5%</td>
+            <td>7%</td>
+            <td><strong>推奨（連休も対象）</strong></td>
+          </tr>
+          <tr>
+            <td>枠③</td>
+            <td>10%割引</td>
+            <td><span class="rate-val">10%</span></td>
+            <td>8/13〜15、9/18〜22</td>
+            <td>5%</td>
+            <td>7%</td>
+            <td>連休外したい場合</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="card">
+      <div class="card-title">精算フロー（公式確認済）</div>
+      <div style="font-size:13px; line-height:2;">
+        <p>① ユーザーが予約：税込売上からクーポン割引額を差し引いた金額を支払い</p>
+        <p>② C/O翌月：楽天から宿泊金額（割引後税込）＋宿クーポン割引額が振込</p>
+        <p>③ C/O翌々月：送客手数料＋販促システム利用料（割引<strong>前</strong>金額ベース）＋クーポン利用額を相殺</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- ========== じゃらん ========== -->
+  <div id="tab-jalan" class="tab-panel">
+
+    <div class="section-title"><span class="dot" style="background:var(--jalan)"></span>じゃらんnet 手数料体系（公式資料3点確認済）</div>
+
+    <div class="grid-2">
+      <div class="card">
+        <div class="card-title"><span class="badge-jalan">固定手数料</span></div>
+        <table class="fee-table">
+          <thead>
+            <tr><th>費目</th><th>料率</th><th>税区分</th><th>備考</th></tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>基本手数料（1名）</td>
+              <td><span class="rate-val">6%</span></td>
+              <td><span class="tax-badge tax-ka">課税</span></td>
+              <td>税抜売上ベース</td>
+            </tr>
+            <tr>
+              <td>基本手数料（2名以上）</td>
+              <td><span class="rate-val">8%</span></td>
+              <td><span class="tax-badge tax-ka">課税</span></td>
+              <td>税抜売上ベース／主力</td>
+            </tr>
+            <tr>
+              <td>ポイント付与料（Ponta）</td>
+              <td><span class="rate-val">1%</span></td>
+              <td><span class="tax-badge tax-fu">不課税</span></td>
+              <td>そのまま費用加算</td>
+            </tr>
+            <tr>
+              <td>販促プログラム料</td>
+              <td><span class="rate-val">1%</span></td>
+              <td><span class="tax-badge tax-ka">課税</span></td>
+              <td>税抜売上ベース</td>
+            </tr>
+            <tr>
+              <td>事前決済手数料</td>
+              <td><span class="rate-val">1.5%＋15円/件</span></td>
+              <td><span class="tax-badge tax-ka">課税</span></td>
+              <td>税抜売上ベース</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="card">
+        <div class="card-title"><span class="badge-jalan">キャンペーン手数料</span></div>
+        <table class="fee-table">
+          <thead>
+            <tr><th>費目</th><th>料率/金額</th><th>税区分</th></tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>販促クーポンシステム利用料</td>
+              <td><span class="rate-val">3%</span></td>
+              <td><span class="tax-badge tax-ka">課税</span></td>
+            </tr>
+            <tr>
+              <td colspan="3" style="color:var(--text-muted); font-size:11px; padding-top:4px;">
+                ⚠️ 計算ベース：税込売上×3%（税抜売上ベースではない）→ 税抜換算必要
+              </td>
+            </tr>
+            <tr>
+              <td>クーポン原資</td>
+              <td><span class="rate-val">500〜15,000円</span></td>
+              <td><span class="tax-badge tax-fu">不課税</span></td>
+            </tr>
+          </tbody>
+        </table>
+
+        <div class="alert" style="margin-top:14px; margin-bottom:0; font-size:11px;">
+          ⚠️ システム利用料コード：<code style="font-family:'JetBrains Mono',monospace;">salesInc × 0.03 ÷ 1.1</code>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-title"><span class="badge-jalan">キャンペーン一覧</span></div>
+      <table class="fee-table">
+        <thead>
+          <tr><th>キャンペーン</th><th>プラン割引</th><th>クーポン原資</th><th>システム利用料</th><th>頻度</th></tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>スペシャルウィーク</td>
+            <td>5%割引（任意）</td>
+            <td>500〜15,000円</td>
+            <td>税込売上×3%</td>
+            <td>年5〜6回</td>
+          </tr>
+          <tr>
+            <td>お得な10日間（20〜29日）</td>
+            <td>5%割引（<strong>必須</strong>）</td>
+            <td>500〜15,000円</td>
+            <td>税込売上×3%</td>
+            <td>毎月</td>
+          </tr>
+          <tr>
+            <td>旅応援クーポン特集</td>
+            <td>不要</td>
+            <td>500〜15,000円</td>
+            <td>税込売上×3%</td>
+            <td>SW以外の月</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- ========== 一休 ========== -->
+  <div id="tab-ikyu" class="tab-panel">
+
+    <div class="section-title"><span class="dot" style="background:var(--ikyu)"></span>一休.com / Yahoo!トラベル 手数料体系</div>
+
+    <div class="card">
+      <div class="card-title"><span class="badge-ikyu">固定手数料</span></div>
+      <table class="fee-table">
+        <thead>
+          <tr><th>費目</th><th>料率/金額</th><th>税区分</th><th>確認状況</th></tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>システム利用料（基本手数料）</td>
+            <td><span class="rate-val">10%</span></td>
+            <td><span class="tax-badge tax-ka">課税</span></td>
+            <td><span class="status-dot status-confirmed"></span>公式確認済</td>
+          </tr>
+          <tr>
+            <td>カード決済システム利用料</td>
+            <td><span class="rate-val">約3.8%</span></td>
+            <td><span class="tax-badge tax-ka">課税</span></td>
+            <td><span class="status-dot status-unconfirmed"></span>実績逆算値・要確認</td>
+          </tr>
+          <tr>
+            <td>予約DLシステム利用料</td>
+            <td><span class="rate-val">¥5,500</span></td>
+            <td><span class="tax-badge tax-ka">課税</span></td>
+            <td><span class="status-dot status-confirmed"></span>実績確認済（税込固定）</td>
+          </tr>
+          <tr>
+            <td>ブーストプログラム</td>
+            <td><span class="rate-val">変動</span></td>
+            <td><span class="tax-badge tax-ka">課税</span></td>
+            <td><span class="status-dot status-pending"></span>請求書から把握</td>
+          </tr>
+          <tr>
+            <td>Yahoo!パック上乗せ</td>
+            <td><span class="rate-val">+3.5%</span></td>
+            <td><span class="tax-badge tax-ka">課税</span></td>
+            <td><span class="status-dot status-confirmed"></span>10%→13.5%</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="card">
+      <div class="card-title"><span class="badge-ikyu">キャンペーン（ポイント施設負担）</span></div>
+      <table class="fee-table">
+        <thead>
+          <tr><th>セール名</th><th>ポイント付与率（施設負担）</th><th>頻度</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>24時間限定セール</td><td><span class="rate-val">10%</span></td><td>毎月1/9/19日</td></tr>
+          <tr><td>夏旅セール / GoGoセール</td><td><span class="rate-val">5%</span></td><td>不定期</td></tr>
+          <tr><td>セレクションセール</td><td><span class="rate-val">10%</span></td><td>不定期</td></tr>
+          <tr><td>一休プレミアム10days</td><td><span class="rate-val">10%</span></td><td>毎月</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="card">
+      <div class="card-title">精算方式</div>
+      <p style="font-size:13px; color:var(--text-muted);">差引振込型 — コスト差し引き後に振込。受取売上実績（2026年2月）：¥3,467,650 / 差引コスト：¥885,878（実質25.5%）</p>
+    </div>
+  </div>
+
+  <!-- ========== 確認事項 ========== -->
+  <div id="tab-notes" class="tab-panel">
+
+    <div class="section-title"><span class="dot" style="background:var(--accent-orange)"></span>確認事項・未解決タスク</div>
+
+    <div class="grid-3">
+      <div class="card">
+        <div class="card-title" style="color:var(--accent-red);">🔴 優先度：高</div>
+        <div style="display:flex; flex-direction:column; gap:12px; font-size:13px;">
+          <div>
+            <span class="status-dot status-unconfirmed"></span>
+            <strong>じゃらん売上金額の取得</strong>
+            <p style="color:var(--text-muted); font-size:11px; margin-top:4px;">管理権限変更後に管理画面から取得</p>
+          </div>
+          <div>
+            <span class="status-dot status-unconfirmed"></span>
+            <strong>楽天の事前カード決済利用状況</strong>
+            <p style="color:var(--text-muted); font-size:11px; margin-top:4px;">月1回か月2回か確認（1.9%か2.4%）</p>
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-title" style="color:var(--accent-orange);">🟠 優先度：中</div>
+        <div style="display:flex; flex-direction:column; gap:12px; font-size:13px;">
+          <div>
+            <span class="status-dot status-unconfirmed"></span>
+            <strong>一休カード決済手数料3.8%の公式確認</strong>
+            <p style="color:var(--text-muted); font-size:11px; margin-top:4px;">管理画面の契約書で確認</p>
+          </div>
+          <div>
+            <span class="status-dot status-unconfirmed"></span>
+            <strong>ブーストプログラムの月別料率記録</strong>
+          </div>
+          <div>
+            <span class="status-dot status-unconfirmed"></span>
+            <strong>月次サマリーへの実績データ入力</strong>
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-title" style="color:var(--text-muted);">⚪ 優先度：低</div>
+        <div style="display:flex; flex-direction:column; gap:12px; font-size:13px;">
+          <div>
+            <span class="status-dot status-pending"></span>
+            <strong>自社予約の売上管理方法の確認</strong>
+          </div>
+          <div>
+            <span class="status-dot status-pending"></span>
+            <strong>ダッシュボードの保存機能追加</strong>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">📚 参照公式資料一覧</div>
+      <table class="fee-table">
+        <thead>
+          <tr><th>資料名</th><th>内容</th><th>信頼度</th></tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>楽天 5と0のつく日/SCW案内PDF（2026年7月版）</td>
+            <td>セット枠構造・システム利用料率・精算フロー</td>
+            <td>◎ 最新公式</td>
+          </tr>
+          <tr>
+            <td>じゃらんスペシャルウィーク案内PDF</td>
+            <td>クーポン券種・精算方法</td>
+            <td>◎</td>
+          </tr>
+          <tr>
+            <td>じゃらんお得な10日間案内PDF</td>
+            <td>券種・プラン条件・精算フロー</td>
+            <td>◎</td>
+          </tr>
+          <tr>
+            <td>旅応援クーポン特集案内PDF</td>
+            <td>券種・最低宿泊金額</td>
+            <td>◎</td>
+          </tr>
+          <tr>
+            <td>管理画面スクリーンショット×3</td>
+            <td>クーポン利用料率3.0%確認</td>
+            <td>◎</td>
+          </tr>
+          <tr>
+            <td>一休公式キャンペーンページ</td>
+            <td>セール種別・ポイント付与率</td>
+            <td>○</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+</div><!-- /content -->
+
+<script>
+// ========== タブ切替 ==========
+function switchTab(name) {
+  document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById('tab-' + name).classList.add('active');
+  event.target.classList.add('active');
+}
+
+// ========== OTA切替 ==========
+function onOtaChange() {
+  const ota = document.getElementById('ota-select').value;
+  document.getElementById('rakuten-campaign').classList.toggle('hidden', ota !== 'rakuten');
+  document.getElementById('jalan-campaign').classList.toggle('hidden', ota !== 'jalan');
+  document.getElementById('ikyu-campaign').classList.toggle('hidden', ota !== 'ikyu');
+  document.getElementById('rakuten-card-row').classList.toggle('hidden', ota !== 'rakuten');
+
+  const jalCamp = document.getElementById('jalan-camp');
+  if (ota === 'jalan') jalCamp.onchange = onJalanCampChange;
+  updateCampaignDetail();
+}
+
+function onJalanCampChange() {
+  const camp = document.getElementById('jalan-camp').value;
+  const show = camp !== 'none';
+  document.getElementById('jalan-coupon-row').classList.toggle('hidden', !show);
+}
+
+// ========== 枠選択 ==========
+function selectFrame(el, val) {
+  document.querySelectorAll('.frame-option').forEach(o => o.classList.remove('selected'));
+  el.classList.add('selected');
+  const scwRow = document.getElementById('scw-flag-row');
+  scwRow.classList.toggle('hidden', val === 'none' || val === 'gobi_only');
+  updateCampaignDetail();
+}
+
+function getSelectedFrame() {
+  const r = document.querySelector('input[name="frame"]:checked');
+  return r ? r.value : 'none';
+}
+
+// ========== キャンペーン詳細 ==========
+function updateCampaignDetail() {
+  // 必要に応じて詳細を表示
+}
+
+// ========== 計算ロジック ==========
+function calculate() {
+  const ota = document.getElementById('ota-select').value;
+  const guests = parseInt(document.getElementById('guests').value);
+  const nights = parseInt(document.getElementById('nights').value) || 1;
+  const pricePerPerson = parseFloat(document.getElementById('price-per').value) || 0;
+  const cardRatio = parseFloat(document.getElementById('card-ratio').value) || 0;
+
+  // 変動原価（税込）
+  const foodCostPerPerson = parseFloat(document.getElementById('food-cost').value) || 0;
+  const amenityCostPerPerson = parseFloat(document.getElementById('amenity-cost').value) || 0;
+  const cleanCostPerNight = parseFloat(document.getElementById('clean-cost').value) || 0;
+  const otherCost = parseFloat(document.getElementById('other-cost').value) || 0;
+
+  // 定価税込売上
+  const salesIncGross = pricePerPerson * guests * nights;
+
+  let discount = 0;
+  let feeEx = 0; // 税抜手数料合計
+  let breakdownItems = [];
+  let campaignLabel = '';
+
+  if (ota === 'rakuten') {
+    const frame = getSelectedFrame();
+    const timing = document.getElementById('scw-timing') ? document.getElementById('scw-timing').value : 'gobi';
+
+    // 割引率の決定
+    let discountRate = 0;
+    let sysRate = 0; // 販促システム利用料率（税込売上前ベース）
+    let isScw = false;
+
+    if (frame === 'none') {
+      campaignLabel = 'キャンペーン不参加';
+    } else if (frame === 'gobi_only') {
+      discountRate = 0.10;
+      sysRate = 0.05; // 温泉宿は5%確定
+      campaignLabel = '5と0のつく日のみ（単品）';
+    } else if (frame === 'set1') {
+      isScw = timing === 'scw';
+      discountRate = isScw ? 0.20 : 0.10;
+      sysRate = 0.05;
+      campaignLabel = isScw ? '枠①：SCW20%期間' : '枠①：5と0のつく日10%';
+    } else if (frame === 'set2') {
+      isScw = timing === 'scw';
+      discountRate = 0.10;
+      sysRate = 0.05;
+      campaignLabel = isScw ? '枠②：SCW10%期間' : '枠②：5と0のつく日10%';
+    } else if (frame === 'set3') {
+      isScw = timing === 'scw';
+      discountRate = 0.10;
+      sysRate = 0.05;
+      campaignLabel = isScw ? '枠③：SCW10%期間' : '枠③：5と0のつく日10%';
+    }
+
+    discount = salesIncGross * discountRate;
+    const salesIncAfter = salesIncGross - discount;
+    const salesEx = salesIncAfter / 1.1;
+    const salesExGross = salesIncGross / 1.1; // 割引前税抜
+
+    // 送客手数料（割引後税抜売上ベース）
+    const agencyRate = guests >= 2 ? 0.0825 : 0.07;
+    const agencyFee = salesEx * agencyRate;
+    feeEx += agencyFee;
+    breakdownItems.push({ label: `送客手数料（${guests >= 2 ? '2名以上8.25%' : '1名7%'}）`, val: agencyFee, color: 'red' });
+
+    // ポイント原資1%（不課税・割引後税込売上ベース）
+    const pointFee = salesIncAfter * 0.01;
+    feeEx += pointFee;
+    breakdownItems.push({ label: 'ポイント原資（1%・不課税）', val: pointFee, color: 'red' });
+
+    // 販促システム利用料（クーポン割引前税込ベース）
+    if (sysRate > 0) {
+      const sysFeeInc = salesIncGross * sysRate;
+      const sysFeeEx = sysFeeInc / 1.1;
+      feeEx += sysFeeEx;
+      breakdownItems.push({ label: `販促システム利用料（${sysRate * 100}%・割引前税込ベース）`, val: sysFeeEx, color: 'red' });
+
+      // クーポン割引負担（税込で発生、税抜換算して粗利計算に組み込む）
+      const couponBurden = discount / 1.1;
+      feeEx += couponBurden;
+      breakdownItems.push({ label: `クーポン割引負担（${discountRate * 100}%）`, val: couponBurden, color: 'red' });
+    }
+
+    // カード決済手数料
+    if (cardRatio > 0) {
+      const cardRate = 0.019; // デフォルト月1回入金
+      const cardFeeInc = salesIncAfter * cardRate * cardRatio;
+      const cardFeeEx = cardFeeInc / 1.1;
+      feeEx += cardFeeEx;
+      breakdownItems.push({ label: 'カード決済手数料（1.9%月1回）', val: cardFeeEx, color: 'red' });
+    }
+
+    // 変動原価（税抜換算）
+    const varCostInc = (foodCostPerPerson + amenityCostPerPerson) * guests * nights
+                     + cleanCostPerNight * nights + otherCost;
+    const varCostEx = varCostInc / 1.1;
+
+    // 最終計算
+    const taxExSales = salesExGross; // 割引前税抜売上（旅館の収入ベース）
+    const grossProfit = taxExSales - feeEx - varCostEx;
+    const grossRate = taxExSales > 0 ? (grossProfit / taxExSales * 100) : 0;
+
+    renderResult({
+      salesIncGross,
+      discount,
+      salesExGross: taxExSales,
+      feeEx,
+      varCostEx,
+      grossProfit,
+      grossRate,
+      breakdownItems,
+      varCostInc,
+      campaignLabel,
+    });
+
+  } else if (ota === 'jalan') {
+    const camp = document.getElementById('jalan-camp').value;
+    const couponAmt = camp !== 'none' ? parseFloat(document.getElementById('jalan-coupon-amt').value) : 0;
+    const discountRate = (camp === 'special_week' || camp === 'otoku_10days') ? 0.05 : 0;
+    discount = salesIncGross * discountRate;
+    const salesIncAfter = salesIncGross - discount;
+    const salesEx = salesIncAfter / 1.1;
+    const salesExGross = salesIncGross / 1.1;
+
+    // 基本手数料
+    const baseRate = guests >= 2 ? 0.08 : 0.06;
+    const baseFee = salesEx * baseRate;
+    feeEx += baseFee;
+    breakdownItems.push({ label: `基本手数料（${guests >= 2 ? '2名以上8%' : '1名6%'}）`, val: baseFee, color: 'red' });
+
+    // ポイント付与料（不課税）
+    const pointFee = salesIncAfter * 0.01;
+    feeEx += pointFee;
+    breakdownItems.push({ label: 'ポイント付与料（1%・Ponta・不課税）', val: pointFee, color: 'red' });
+
+    // 販促プログラム料
+    const promFee = salesEx * 0.01;
+    feeEx += promFee;
+    breakdownItems.push({ label: '販促プログラム料（1%）', val: promFee, color: 'red' });
+
+    // キャンペーン
+    if (camp !== 'none') {
+      // システム利用料：税込売上×3%→税抜換算
+      const sysFeeInc = salesIncGross * 0.03;
+      const sysFeeEx = sysFeeInc / 1.1;
+      feeEx += sysFeeEx;
+      breakdownItems.push({ label: '販促クーポンシステム利用料（税込売上×3%）', val: sysFeeEx, color: 'red' });
+
+      // クーポン原資（不課税）
+      if (couponAmt > 0) {
+        feeEx += couponAmt;
+        breakdownItems.push({ label: `クーポン原資（${couponAmt.toLocaleString()}円・不課税）`, val: couponAmt, color: 'red' });
+      }
+
+      // プラン割引負担
+      if (discountRate > 0) {
+        const discEx = discount / 1.1;
+        feeEx += discEx;
+        breakdownItems.push({ label: `プラン5%割引負担`, val: discEx, color: 'red' });
+      }
+    }
+
+    const varCostInc = (foodCostPerPerson + amenityCostPerPerson) * guests * nights
+                     + cleanCostPerNight * nights + otherCost;
+    const varCostEx = varCostInc / 1.1;
+    const grossProfit = salesExGross - feeEx - varCostEx;
+    const grossRate = salesExGross > 0 ? (grossProfit / salesExGross * 100) : 0;
+
+    campaignLabel = camp === 'none' ? '通常' :
+                    camp === 'special_week' ? 'スペシャルウィーク' :
+                    camp === 'otoku_10days' ? 'お得な10日間' : '旅応援クーポン特集';
+
+    renderResult({ salesIncGross, discount, salesExGross, feeEx, varCostEx, grossProfit, grossRate, breakdownItems, varCostInc, campaignLabel });
+
+  } else if (ota === 'ikyu') {
+    const camp = document.getElementById('ikyu-camp').value;
+    const salesEx = salesIncGross / 1.1;
+
+    // 基本手数料
+    const baseRate = camp === 'yahoo_pack' ? 0.135 : 0.10;
+    const baseFee = salesEx * baseRate;
+    feeEx += baseFee;
+    breakdownItems.push({ label: `システム利用料（${baseRate * 100}%）`, val: baseFee, color: 'red' });
+
+    // カード決済
+    const cardFeeEx = salesEx * 0.038;
+    feeEx += cardFeeEx;
+    breakdownItems.push({ label: 'カード決済手数料（約3.8%・実績値）', val: cardFeeEx, color: 'red' });
+
+    // ポイント施設負担
+    if (camp !== 'none' && camp !== 'yahoo_pack') {
+      const pointRate = (camp === 'summer') ? 0.05 : 0.10;
+      const pointBurden = salesEx * pointRate;
+      feeEx += pointBurden;
+      breakdownItems.push({ label: `ポイント施設負担（${pointRate * 100}%）`, val: pointBurden, color: 'red' });
+    }
+
+    const varCostInc = (foodCostPerPerson + amenityCostPerPerson) * guests * nights
+                     + cleanCostPerNight * nights + otherCost;
+    const varCostEx = varCostInc / 1.1;
+    const grossProfit = salesEx - feeEx - varCostEx;
+    const grossRate = salesEx > 0 ? (grossProfit / salesEx * 100) : 0;
+
+    campaignLabel = camp === 'none' ? '通常' :
+                    camp === 'yahoo_pack' ? 'Yahoo!パック' :
+                    camp === 'summer' ? '夏旅/GoGoセール' : 'ポイント10%セール';
+
+    renderResult({ salesIncGross, discount: 0, salesExGross: salesEx, feeEx, varCostEx, grossProfit, grossRate, breakdownItems, varCostInc, campaignLabel });
+  }
+}
+
+function renderResult({ salesIncGross, discount, salesExGross, feeEx, varCostEx, grossProfit, grossRate, breakdownItems, varCostInc, campaignLabel }) {
+  const fmt = v => '¥' + Math.round(v).toLocaleString();
+
+  // OTA手数料率（原価引き前・税抜売上ベース）
+  const feeRate = salesExGross > 0 ? (feeEx / salesExGross * 100) : 0;
+  // 原価控除後の粗利率
+  const gColor = grossProfit >= 0 ? 'var(--accent-green)' : 'var(--accent-red)';
+
+  document.getElementById('res-gross').textContent = fmt(grossProfit);
+  document.getElementById('res-gross').style.color = grossProfit >= 0 ? 'var(--accent-green)' : 'var(--accent-red)';
+  document.getElementById('res-rate').textContent = `粗利率 ${grossRate.toFixed(1)}%　（${campaignLabel}）`;
+
+  // ヒーロー下にOTA手数料率バッジを更新
+  let feeRateHtml = document.getElementById('res-fee-rate-box');
+  if (!feeRateHtml) {
+    const hero = document.querySelector('.result-hero');
+    const box = document.createElement('div');
+    box.id = 'res-fee-rate-box';
+    box.style.cssText = 'display:flex;gap:12px;margin-bottom:16px;';
+    hero.after(box);
+  }
+  document.getElementById('res-fee-rate-box').innerHTML = `
+    <div style="flex:1;background:rgba(224,90,90,0.1);border:1px solid rgba(224,90,90,0.25);border-radius:8px;padding:12px 16px;text-align:center;">
+      <div style="font-size:10px;color:var(--text-muted);letter-spacing:0.08em;text-transform:uppercase;margin-bottom:4px;">OTA手数料率</div>
+      <div style="font-family:'JetBrains Mono',monospace;font-size:24px;font-weight:600;color:var(--accent-red);">${feeRate.toFixed(1)}%</div>
+      <div style="font-size:10px;color:var(--text-muted);margin-top:2px;">原価控除前・税抜売上比</div>
+    </div>
+    <div style="flex:1;background:rgba(52,199,123,0.08);border:1px solid rgba(52,199,123,0.2);border-radius:8px;padding:12px 16px;text-align:center;">
+      <div style="font-size:10px;color:var(--text-muted);letter-spacing:0.08em;text-transform:uppercase;margin-bottom:4px;">税抜粗利率</div>
+      <div style="font-family:'JetBrains Mono',monospace;font-size:24px;font-weight:600;color:${gColor};">${grossRate.toFixed(1)}%</div>
+      <div style="font-size:10px;color:var(--text-muted);margin-top:2px;">原価控除後・税抜売上比</div>
+    </div>
+  `;
+
+  let html = '';
+
+  html += `<div class="rb-row"><span class="rb-label">定価税込売上</span><span class="rb-val blue">${fmt(salesIncGross)}</span></div>`;
+  if (discount > 0) {
+    html += `<div class="rb-row"><span class="rb-label">　└ 値引き額（税込）</span><span class="rb-val red">− ${fmt(discount)}</span></div>`;
+  }
+  html += `<div class="rb-row"><span class="rb-label">税抜売上（粗利計算ベース）</span><span class="rb-val blue">${fmt(salesExGross)}</span></div>`;
+
+  html += '<div class="rb-divider"></div>';
+  html += `<div class="rb-row" style="background:rgba(224,90,90,0.05);"><span class="rb-label" style="color:#e06060;">▼ 手数料合計（税抜）</span><span class="rb-val red">− ${fmt(feeEx)}<span style="font-size:11px;color:var(--accent-red);margin-left:8px;">${feeRate.toFixed(1)}%</span></span></div>`;
+  breakdownItems.forEach(item => {
+    html += `<div class="rb-row" style="padding-left:24px;"><span class="rb-label">　${item.label}</span><span class="rb-val red">− ${fmt(item.val)}</span></div>`;
+  });
+
+  html += '<div class="rb-divider"></div>';
+  html += `<div class="rb-row"><span class="rb-label">▼ 変動原価（税抜）</span><span class="rb-val red">− ${fmt(varCostEx)}</span></div>`;
+  html += `<div class="rb-row" style="padding-left:24px;"><span class="rb-label">　（税込原価：${fmt(varCostInc)}）</span><span class="rb-val"></span></div>`;
+
+  html += '<div class="rb-divider"></div>';
+  const gc = grossProfit >= 0 ? 'green' : 'red';
+  html += `<div class="rb-row gross"><span class="rb-label" style="font-weight:700;">★ 税抜粗利益</span><span class="rb-val ${gc}" style="font-size:16px;">${fmt(grossProfit)}</span></div>`;
+  html += `<div class="rb-row" style="background:rgba(52,199,123,0.04);"><span class="rb-label">粗利率（原価控除後）</span><span class="rb-val ${gc}">${grossRate.toFixed(2)}%</span></div>`;
+
+  document.getElementById('res-breakdown').innerHTML = html;
+}
+
+// 初期化
+document.getElementById('jalan-camp').addEventListener('change', onJalanCampChange);
+</script>
+</body>
+</html>
