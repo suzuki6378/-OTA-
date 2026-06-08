@@ -1,0 +1,950 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>OTA手数料管理システム｜昼神温泉 四季の織 はなや</title>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: 'Hiragino Kaku Gothic ProN', 'Noto Sans JP', sans-serif; background: #f4f6f8; color: #333; font-size: 14px; }
+
+/* ヘッダー */
+.header { background: #1a2a3a; color: #fff; padding: 10px 20px; display: flex; align-items: center; gap: 12px; }
+.badge { background: #e74c3c; font-size: 10px; font-weight: 700; padding: 2px 8px; border-radius: 10px; letter-spacing: 1px; }
+.header h1 { font-size: 15px; font-weight: 600; }
+.version { font-size: 11px; opacity: 0.5; margin-left: 6px; }
+
+/* タブ */
+.tabs { background: #fff; border-bottom: 1px solid #ddd; display: flex; overflow-x: auto; }
+.tab { padding: 11px 18px; cursor: pointer; font-size: 13px; white-space: nowrap; border-bottom: 3px solid transparent; color: #777; transition: all 0.15s; }
+.tab:hover { color: #333; background: #fafafa; }
+.tab.active { color: #1a2a3a; border-bottom-color: #e74c3c; font-weight: 600; }
+
+/* ページ */
+.page { display: none; padding: 20px; max-width: 980px; margin: 0 auto; }
+.page.active { display: block; }
+
+/* セクション */
+.section { background: #fff; border: 1px solid #ddd; border-radius: 8px; padding: 18px 20px; margin-bottom: 16px; }
+.section h3 { font-size: 14px; font-weight: 700; padding-bottom: 10px; border-bottom: 2px solid #eee; margin-bottom: 14px; color: #1a2a3a; }
+
+/* 2カラムグリッド */
+.grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+@media(max-width:640px){ .grid2 { grid-template-columns: 1fr; } }
+
+/* フォーム部品 */
+.field { margin-bottom: 12px; }
+.field label { display: block; font-size: 12px; font-weight: 600; color: #666; margin-bottom: 4px; }
+.field input[type=number], .field select {
+  width: 100%; border: 1px solid #ccc; border-radius: 5px;
+  padding: 7px 10px; font-size: 14px; color: #333; background: #fff;
+  outline: none; transition: border-color 0.15s;
+}
+.field input:focus, .field select:focus { border-color: #3498db; }
+.radio-list { display: flex; flex-direction: column; gap: 6px; margin-top: 2px; }
+.radio-list label { display: flex; align-items: center; gap: 7px; font-size: 13px; cursor: pointer; }
+.radio-list label input { cursor: pointer; }
+.field-note { font-size: 11px; color: #999; margin-top: 3px; }
+
+/* ボタン */
+.btn-calc { width: 100%; background: #2c3e50; color: #fff; border: none; border-radius: 6px; padding: 12px; font-size: 15px; font-weight: 700; cursor: pointer; margin-top: 4px; transition: background 0.15s; }
+.btn-calc:hover { background: #1a2a3a; }
+
+/* 結果ボックス */
+.result-hint { text-align: center; color: #aaa; padding: 30px 0; font-size: 13px; }
+.result-box { background: #f0fff4; border: 1px solid #9ae6b4; border-radius: 7px; padding: 16px; margin-top: 14px; }
+.result-row { display: flex; justify-content: space-between; align-items: center; padding: 5px 0; font-size: 13px; border-bottom: 1px solid #c6f6d5; }
+.result-row:last-child { border-bottom: none; }
+.result-row.total { font-size: 15px; font-weight: 700; padding-top: 10px; margin-top: 4px; border-top: 2px solid #9ae6b4; border-bottom: none; }
+.result-row .lbl { color: #555; }
+.result-row .val { font-weight: 600; }
+.val-minus { color: #c0392b; }
+.val-plus  { color: #27ae60; }
+.val-note  { color: #888; font-size: 11px; }
+.result-divider { border: none; border-top: 1px solid #c6f6d5; margin: 6px 0; }
+
+/* テーブル */
+table { width: 100%; border-collapse: collapse; font-size: 13px; }
+th { background: #f4f6f8; padding: 8px 10px; text-align: left; font-weight: 600; border-bottom: 2px solid #ddd; }
+td { padding: 7px 10px; border-bottom: 1px solid #eee; }
+tr:hover td { background: #fafafa; }
+.ok  { color: #27ae60; font-weight: 700; }
+.chk { color: #e67e22; font-weight: 700; }
+
+/* 価格比較 */
+.pc-summary { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 10px; margin-bottom: 16px; }
+.pc-card { background: #fff; border: 1px solid #ddd; border-radius: 7px; padding: 12px 14px; }
+.pc-card .lbl { font-size: 11px; font-weight: 700; color: #888; text-transform: uppercase; }
+.pc-card .val { font-size: 19px; font-weight: 800; margin-top: 2px; }
+.pc-card .sub { font-size: 11px; color: #999; }
+
+.ota-list { display: flex; flex-direction: column; gap: 8px; }
+.ota-row { background: #fff; border: 1px solid #ddd; border-radius: 7px; padding: 12px 16px; display: grid; grid-template-columns: 36px 1fr auto; align-items: center; gap: 12px; }
+.ota-row.rank1 { border-color: #f1c40f; border-width: 2px; background: #fffdf0; }
+.ota-row.rank2 { border-color: #bdc3c7; }
+.ota-row.rank3 { border-color: #cd7f32; }
+.rank-num { width: 30px; height: 30px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 800; font-size: 13px; }
+.rank1 .rank-num { background: #f1c40f; color: #7d6608; }
+.rank2 .rank-num { background: #e0e0e0; color: #555; }
+.rank3 .rank-num { background: #e8c090; color: #7a4000; }
+.rankN .rank-num { background: #f0f0f0; color: #aaa; }
+.ota-name { font-weight: 700; font-size: 14px; }
+.ota-tags { margin-top: 3px; }
+.tag { display: inline-block; background: #ebf5fb; color: #2980b9; border-radius: 3px; padding: 1px 6px; font-size: 11px; margin: 1px 2px 1px 0; }
+.tag-none { background: #f5f5f5; color: #aaa; }
+.ota-fee { font-size: 11px; color: #999; margin-top: 3px; }
+.ota-price { font-size: 22px; font-weight: 800; text-align: right; }
+.ota-profit { font-size: 12px; font-weight: 600; text-align: right; }
+.profit-ok   { color: #27ae60; }
+.profit-warn { color: #e67e22; }
+
+/* 月次 */
+.graph-area { background: #fafafa; border: 1px dashed #ddd; border-radius: 7px; padding: 40px; text-align: center; color: #aaa; font-size: 13px; }
+
+/* 確認事項 優先度 */
+.pri-h { color: #e74c3c; font-weight: 700; }
+.pri-m { color: #e67e22; font-weight: 700; }
+.pri-l { color: #aaa; }
+
+/* 注意書き */
+.note-warn { font-size: 12px; color: #e67e22; margin-bottom: 10px; line-height: 1.6; }
+
+/* ── 計算結果 ── */
+.res-wrap { background: #fff; border: 1px solid #ddd; border-radius: 8px; margin-top: 16px; overflow: hidden; }
+.res-title { font-size: 12px; color: #aaa; padding: 12px 16px 0; }
+.res-kpi { display: grid; grid-template-columns: 1fr 1fr 1fr; border-bottom: 1px solid #eee; }
+.res-kpi-cell { padding: 10px 12px 14px; text-align: center; border-right: 1px solid #eee; }
+.res-kpi-cell:last-child { border-right: none; }
+.res-kpi-label { font-size: 11px; color: #aaa; margin-bottom: 4px; }
+.res-kpi-val { font-size: 22px; font-weight: 800; }
+.kpi-blue  { color: #2980b9; }
+.kpi-red   { color: #e74c3c; }
+.kpi-green { color: #27ae60; }
+.res-row { display: flex; justify-content: space-between; align-items: center; padding: 10px 16px; border-bottom: 1px solid #f0f0f0; font-size: 13px; }
+.res-row:last-child { border-bottom: none; }
+.res-row.sub { padding-left: 28px; color: #888; background: #fafafa; }
+.res-row.highlight { background: #eef4ff; font-weight: 700; color: #2980b9; }
+.res-row.fee-total { font-weight: 700; color: #e74c3c; }
+.res-row.cost-total { font-weight: 700; }
+.res-row.profit-row { font-weight: 800; color: #27ae60; font-size: 14px; background: #f0faf4; }
+.res-row.profit-rate-row { font-weight: 800; color: #27ae60; font-size: 14px; border-bottom: none; }
+.badge-tax    { display: inline-block; background: #d6eaf8; color: #2980b9; border-radius: 20px; font-size: 10px; font-weight: 700; padding: 2px 8px; margin-left: 6px; }
+.badge-notax  { display: inline-block; background: #fdebd0; color: #e67e22; border-radius: 20px; font-size: 10px; font-weight: 700; padding: 2px 8px; margin-left: 6px; }
+.res-val-red   { color: #e74c3c; font-weight: 600; }
+.res-val-gray  { color: #aaa; }
+.res-val-green { color: #27ae60; font-weight: 800; }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <span class="badge">OTA FEE MGR</span>
+  <h1>昼神温泉 四季の織 はなや</h1>
+  <span class="version">v3.0</span>
+</div>
+
+<div class="tabs">
+  <div class="tab active"  onclick="showPage('sim')">📊 シミュレーター</div>
+  <div class="tab"         onclick="showPage('pc')">💰 価格比較</div>
+  <div class="tab"         onclick="showPage('rakuten')">🔴 楽天トラベル</div>
+  <div class="tab"         onclick="showPage('jalan')">🔵 じゃらんnet</div>
+  <div class="tab"         onclick="showPage('ikyu')">🟡 一休.com</div>
+  <div class="tab"         onclick="showPage('tasks')">📋 確認事項</div>
+  <div class="tab"         onclick="showPage('monthly')">📈 月次推移</div>
+</div>
+
+<!-- =========================================================
+     シミュレーター
+========================================================= -->
+<div id="page-sim" class="page active">
+
+  <!-- 基本設定 -->
+  <div class="section">
+    <h3>基本設定</h3>
+    <div class="grid2">
+      <div>
+        <div class="field">
+          <label>OTA選択</label>
+          <select id="s-ota" onchange="onOtaChange()">
+            <option value="rakuten">楽天トラベル</option>
+            <option value="jalan">じゃらんnet</option>
+            <option value="ikyu">一休.com / Yahoo!トラベル</option>
+          </select>
+        </div>
+        <div class="field">
+          <label>宿泊人数</label>
+          <select id="s-guests">
+            <option value="multi" selected>2名以上（デフォルト）</option>
+            <option value="single">1名</option>
+          </select>
+        </div>
+      </div>
+      <div>
+        <div class="field">
+          <label>設定金額（定価・税込）</label>
+          <input type="number" id="s-price" value="50000" placeholder="例: 50000">
+        </div>
+        <div class="field">
+          <label>泊数</label>
+          <input type="number" id="s-nights" value="1" min="1">
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 楽天 詳細 -->
+  <div class="section" id="detail-rakuten">
+    <h3>楽天トラベル 詳細設定</h3>
+    <div class="grid2">
+      <div>
+        <div class="field">
+          <label>キャンペーン枠</label>
+          <select id="r-camp">
+            <option value="none">キャンペーン不参加（通常）</option>
+            <option value="solo">5と0のつく日のみ（施設10%OFF・楽天原資5%OFF）</option>
+            <option value="f1">枠①：5と0日10%OFF ＋ SCW20%OFF（楽天原資10%OFF）</option>
+            <option value="f2">枠②：5と0日10%OFF ＋ SCW10%OFF・除外日なし（楽天原資7%OFF）★推奨</option>
+            <option value="f3">枠③：5と0日10%OFF ＋ SCW10%OFF・連休除外（楽天原資7%OFF）</option>
+          </select>
+        </div>
+      </div>
+      <div>
+        <div class="field">
+          <label>決済方法</label>
+          <select id="r-pay">
+            <option value="local">現地決済（手数料なし）</option>
+            <option value="card" selected>事前カード決済</option>
+          </select>
+        </div>
+        <div class="field">
+          <label>カード決済手数料率（税抜）</label>
+          <select id="r-card">
+            <option value="2.0" selected>カード決済手数料: 2.0%</option>
+          </select>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- じゃらん 詳細 -->
+  <div class="section" id="detail-jalan" style="display:none;">
+    <h3>じゃらんnet 詳細設定</h3>
+    <div class="grid2">
+      <div>
+        <div class="field">
+          <label>キャンペーン</label>
+          <select id="j-camp">
+            <option value="none">キャンペーン不参加（通常）</option>
+            <option value="sw">スペシャルウィーク（5%割引任意）</option>
+            <option value="otoku">お得な10日間・20〜29日（5%割引必須）</option>
+            <option value="tabi">旅応援クーポン特集（割引不要）</option>
+          </select>
+        </div>
+      </div>
+      <div>
+        <div class="field">
+          <label>決済方法</label>
+          <select id="j-pay">
+            <option value="local" selected>現地決済（手数料なし）</option>
+            <option value="card">事前カード決済（+1.5%+15円）</option>
+          </select>
+        </div>
+        <div class="field" style="margin-top:10px;">
+          <label>クーポン原資（不課税・円）</label>
+          <input type="number" id="j-coupon" value="0" placeholder="例: 1000">
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 一休 詳細 -->
+  <div class="section" id="detail-ikyu" style="display:none;">
+    <h3>一休.com 詳細設定</h3>
+    <div class="grid2">
+      <div>
+        <div class="field">
+          <label>キャンペーン / プログラム</label>
+          <select id="i-camp">
+            <option value="none">通常（10%のみ）</option>
+            <option value="h24">24時間限定セール（+10%ポイント）</option>
+            <option value="natsu">夏旅/GoGoセール（+5%ポイント）</option>
+            <option value="select">セレクション/一休プレミアム10days（+10%ポイント）</option>
+            <option value="yahoo">Yahoo!パック（+3.5%）</option>
+          </select>
+        </div>
+      </div>
+      <div>
+        <div class="field">
+          <label>カード決済手数料率（税抜 %）</label>
+          <input type="number" id="i-card" value="3.8" step="0.1">
+          <div class="field-note">⚠ 実績逆算値・要公式確認</div>
+        </div>
+        <div class="field">
+          <label>ブーストプログラム（税抜 %）</label>
+          <input type="number" id="i-boost" value="0" step="0.1">
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 変動原価 -->
+  <div class="section">
+    <h3>変動原価（税込入力 → 自動で税抜換算）</h3>
+    <div class="grid2">
+      <div>
+        <div class="field"><label>食材費（税込）</label><input type="number" id="c-food" value="0"></div>
+        <div class="field"><label>アメニティ費（税込）</label><input type="number" id="c-amenity" value="0"></div>
+      </div>
+      <div>
+        <div class="field"><label>清掃費（税込）</label><input type="number" id="c-clean" value="0"></div>
+        <div class="field"><label>その他原価（税込）</label><input type="number" id="c-other" value="0"></div>
+      </div>
+    </div>
+  </div>
+
+  <button class="btn-calc" onclick="calcSim()">計算する</button>
+
+  <div id="sim-result">
+    <div class="result-hint">↑ 条件を入力して「計算する」を押してください</div>
+  </div>
+</div>
+
+<!-- =========================================================
+     価格比較
+========================================================= -->
+<div id="page-pc" class="page">
+  <div class="section">
+    <h3>🔍 検索条件</h3>
+    <div class="grid2">
+      <div>
+        <div class="field"><label>チェックイン日</label><input type="date" id="pc-date"></div>
+        <div class="field">
+          <label>泊数</label>
+          <select id="pc-nights">
+            <option value="1">1泊</option><option value="2" selected>2泊</option>
+            <option value="3">3泊</option><option value="4">4泊</option><option value="5">5泊</option>
+          </select>
+        </div>
+        <div class="field">
+          <label>人数</label>
+          <select id="pc-guests">
+            <option value="1">1名</option><option value="2" selected>2名</option>
+            <option value="3">3名</option><option value="4">4名</option>
+            <option value="5">5名</option><option value="6">6名</option>
+          </select>
+        </div>
+      </div>
+      <div>
+        <div class="field">
+          <label>食事プラン</label>
+          <select id="pc-meal">
+            <option value="din">2食付き</option>
+            <option value="none">素泊まり</option>
+          </select>
+        </div>
+        <div class="field">
+          <label>部屋タイプ</label>
+          <select id="pc-room">
+            <option value="all">全タイプ（代表で計算）</option>
+            <option value="特別室">特別室（最大6名）</option>
+            <option value="離れ">離れ（最大4名）</option>
+            <option value="花車">花車（最大6名）</option>
+            <option value="デザイナーズ">デザイナーズ（最大4名）</option>
+            <option value="山側部屋">山側部屋（最大4名）</option>
+            <option value="町側部屋">町側部屋（最大4名）</option>
+            <option value="デザイナーズベッド">デザイナーズベッド（最大4名）</option>
+            <option value="山側ベッド">山側ベッド（最大4名）</option>
+            <option value="町側ベッド">町側ベッド（最大4名）</option>
+          </select>
+        </div>
+      </div>
+    </div>
+    <button class="btn-calc" onclick="calcPC()">💰 価格を比較する</button>
+  </div>
+  <div id="pc-result"><div class="result-hint">↑ 条件を入力して「価格を比較する」を押してください</div></div>
+</div>
+
+<!-- =========================================================
+     楽天
+========================================================= -->
+<div id="page-rakuten" class="page">
+  <div class="section">
+    <div class="note-warn">⚠️ 販促システム利用料は<strong>割引前税込売上ベース</strong>（公式資料p.47確認済み）。温泉宿5%（最高級宿3%と混同注意）</div>
+    <h3>楽天トラベル 手数料体系（温泉宿カテゴリ）</h3>
+    <p style="font-size:12px;font-weight:700;color:#555;margin-bottom:6px;">固定手数料</p>
+    <table>
+      <tr><th>費目</th><th>料率</th><th>税区分</th><th>計算ベース</th><th>確認</th></tr>
+      <tr><td>送客手数料（1名）</td><td>7%（税抜）</td><td>課税</td><td>税抜売上</td><td class="ok">◎</td></tr>
+      <tr><td>送客手数料（2名以上）</td><td>8.25%（税抜）</td><td>課税</td><td>税抜売上</td><td class="ok">◎</td></tr>
+      <tr><td>カード決済手数料</td><td>2.0%（税抜）</td><td>課税</td><td>税抜売上</td><td class="ok">◎確認済</td></tr>
+      <tr><td>ボーナスプログラム</td><td>3%（税抜）</td><td>課税</td><td>割引前税込売上</td><td class="ok">◎常時</td></tr>
+      <tr><td>ポイント原資</td><td>1%</td><td>不課税</td><td>実質税込売上</td><td class="ok">◎</td></tr>
+    </table>
+    <br>
+    <p style="font-size:12px;font-weight:700;color:#555;margin-bottom:6px;">2026年7月〜 キャンペーン枠</p>
+    <table>
+      <tr><th>枠</th><th>5と0のつく日</th><th>SCW割引率</th><th>SCW除外日</th><th>システム利用料</th><th>楽天原資</th></tr>
+      <tr><td>枠①</td><td>20%OFF（施設100%負担）</td><td>10%OFF</td><td>8/13〜15、9/18〜22</td><td>5%（販促システム利用料）</td><td>10%OFF（楽天負担）</td></tr>
+      <tr><td><strong>枠② 推奨</strong></td><td>10%OFF（施設100%負担）</td><td>10%OFF</td><td>なし</td><td>5%（販促システム利用料）</td><td>7%OFF（楽天負担）</td></tr>
+      <tr><td>枠③</td><td>10%OFF（施設100%負担）</td><td>10%OFF</td><td>8/13〜15、9/18〜22</td><td>5%（販促システム利用料）</td><td>7%OFF（楽天負担）</td></tr>
+      <tr><td>5と0日のみ（単品）</td><td>10%OFF（施設100%負担）</td><td>—</td><td>—</td><td>5%（販促システム利用料）</td><td>7%OFF（楽天負担）</td></tr>
+    </table>
+    <p style="font-size:11px;color:#999;margin-top:8px;">※ SCWの宿負担割合は要確認（暫定未計上）<br>※ 楽天原資クーポン：2026年7月〜は7%（SCW10%枠）/ 10%（SCW20%枠）</p>
+  </div>
+</div>
+
+<!-- =========================================================
+     じゃらん
+========================================================= -->
+<div id="page-jalan" class="page">
+  <div class="section">
+    <div class="note-warn">⚠️ 販促クーポンシステム利用料3%は<strong>定価税込売上ベース</strong>。クーポン原資は不課税（÷1.1不要）</div>
+    <h3>じゃらんnet 手数料体系（公式資料3点確認済み）</h3>
+    <p style="font-size:12px;font-weight:700;color:#555;margin-bottom:6px;">手数料一覧</p>
+    <table>
+      <tr><th>費目</th><th>料率</th><th>税区分</th><th>計算ベース</th></tr>
+      <tr><td>基本手数料（1名）</td><td>6%（税抜）</td><td>課税</td><td>税抜売上</td></tr>
+      <tr><td>基本手数料（2名以上）</td><td>8%（税抜）</td><td>課税</td><td>税抜売上</td></tr>
+      <tr><td>ポイント付与料（Ponta）</td><td>1%</td><td>不課税</td><td>実質税込売上</td></tr>
+      <tr><td>販促プログラム料</td><td>1%（税抜）</td><td>課税</td><td>税抜売上</td></tr>
+      <tr><td>事前決済手数料</td><td>1.5%＋15円/件（税抜）</td><td>課税</td><td>税抜売上</td></tr>
+      <tr><td>販促クーポンシステム利用料</td><td>3%</td><td>課税</td><td>定価税込×3%÷1.1</td></tr>
+      <tr><td>クーポン原資</td><td>500〜15,000円</td><td>不課税</td><td>そのまま加算</td></tr>
+    </table>
+  </div>
+</div>
+
+<!-- =========================================================
+     一休
+========================================================= -->
+<div id="page-ikyu" class="page">
+  <div class="section">
+    <div class="note-warn">⚠️ カード決済手数料3.8%は実績逆算値・要公式確認。精算方式は差引振込型。</div>
+    <h3>一休.com / Yahoo!トラベル 手数料体系</h3>
+    <p style="font-size:12px;font-weight:700;color:#555;margin-bottom:6px;">手数料一覧</p>
+    <table>
+      <tr><th>費目</th><th>料率</th><th>税区分</th><th>確認状況</th></tr>
+      <tr><td>システム利用料（基本手数料）</td><td>10%（税抜）</td><td>課税</td><td class="ok">◎公式確認済</td></tr>
+      <tr><td>カード決済システム利用料</td><td>約3.8%（税抜）</td><td>課税</td><td class="chk">⚠ 要確認</td></tr>
+      <tr><td>予約DLシステム利用料</td><td>¥5,500固定（税込）<br><span style="font-size:11px;color:#999;">※ 月額固定費・1予約ごとには計上しない</span></td><td>課税</td><td class="ok">◎実績確認済</td></tr>
+      <tr><td>ブーストプログラム</td><td>変動</td><td>課税</td><td>請求書から把握</td></tr>
+      <tr><td>Yahoo!パック上乗せ</td><td>+3.5%（計13.5%）</td><td>課税</td><td class="ok">◎</td></tr>
+    </table>
+    <br>
+    <p style="font-size:12px;font-weight:700;color:#555;margin-bottom:6px;">実績（2026年2月）</p>
+    <table>
+      <tr><th></th><th>金額</th></tr>
+      <tr><td>受取売上</td><td>¥3,467,650</td></tr>
+      <tr><td>差引コスト</td><td>¥885,878</td></tr>
+      <tr><td>実質手数料率</td><td>25.5%</td></tr>
+    </table>
+  </div>
+</div>
+
+<!-- =========================================================
+     確認事項
+========================================================= -->
+<div id="page-tasks" class="page">
+  <div class="section">
+    <h3>残タスク（PENDING）</h3>
+    <table>
+      <tr><th>優先度</th><th>タスク</th></tr>
+      <tr><td><span class="pri-h">高</span></td><td>じゃらん売上金額の管理画面取得（管理権限変更後）</td></tr>
+      <tr><td><span class="pri-h">高</span></td><td>楽天の事前カード決済利用状況の確認（月1回 or 月2回）</td></tr>
+      <tr><td><span class="pri-h">高</span></td><td>楽天SCWの宿負担割合の確認（公式資料）</td></tr>
+      <tr><td><span class="pri-m">中</span></td><td>楽天の基本コミッション（8.25%）の計算ベース確認 → 現在は「割引後税抜売上ベース」で計算しているが、「割引前税抜売上ベース」の可能性あり。請求書と照合して確認。</td></tr>
+      <tr><td><span class="pri-m">中</span></td><td>一休のカード決済手数料3.8%の公式確認</td></tr>
+      <tr><td><span class="pri-m">中</span></td><td>ブーストプログラムの月別料率記録</td></tr>
+      <tr><td><span class="pri-m">中</span></td><td>月次サマリーへの実績データ入力開始</td></tr>
+      <tr><td><span class="pri-l">低</span></td><td>自社予約の売上管理方法の確認</td></tr>
+      <tr><td><span class="pri-l">低</span></td><td>ダッシュボードの保存機能追加</td></tr>
+    </table>
+  </div>
+  <div class="section">
+    <h3>実績データ（参考）</h3>
+    <table>
+      <tr><th>OTA</th><th>期間</th><th>売上</th><th>請求額</th><th>実質手数料率</th></tr>
+      <tr><td>楽天トラベル</td><td>2025年12月</td><td>¥3,377,860（55泊）</td><td>¥685,281</td><td>20.3%</td></tr>
+      <tr><td>じゃらんnet</td><td>2025年12月</td><td>管理画面から要取得</td><td>¥347,593（40件）</td><td>—</td></tr>
+      <tr><td>一休.com/Yahoo!</td><td>2026年2月</td><td>¥3,467,650</td><td>¥885,878</td><td>25.5%</td></tr>
+    </table>
+  </div>
+</div>
+
+<!-- =========================================================
+     月次推移
+========================================================= -->
+<div id="page-monthly" class="page">
+  <div class="section">
+    <h3>月次推移グラフ</h3>
+    <div class="graph-area">
+      データを読み込み中...<br><br>
+      <button onclick="loadGAS()" style="background:#2c3e50;color:#fff;border:none;padding:8px 20px;border-radius:5px;cursor:pointer;">🔄 データを再読み込み</button>
+    </div>
+    <p style="font-size:12px;color:#aaa;margin-top:10px;">月別売上推移（税抜）/ 月別OTA手数料率推移 / 直近月の売上構成比</p>
+  </div>
+</div>
+
+<script>
+// ============================================================
+// タブ切り替え
+// ============================================================
+const PAGES = ['sim','pc','rakuten','jalan','ikyu','tasks','monthly'];
+function showPage(id) {
+  PAGES.forEach((p, i) => {
+    document.getElementById('page-' + p).classList.toggle('active', p === id);
+    document.querySelectorAll('.tab')[i].classList.toggle('active', p === id);
+  });
+}
+
+// OTA切り替え
+function onOtaChange() {
+  const v = document.getElementById('s-ota').value;
+  document.getElementById('detail-rakuten').style.display = v === 'rakuten' ? '' : 'none';
+  document.getElementById('detail-jalan').style.display   = v === 'jalan'   ? '' : 'none';
+  document.getElementById('detail-ikyu').style.display    = v === 'ikyu'    ? '' : 'none';
+}
+
+// ============================================================
+// シミュレーター計算
+// ============================================================
+function calcSim() {
+  const ota    = document.getElementById('s-ota').value;
+  const multi  = document.getElementById('s-guests').value === 'multi';
+  const price  = parseFloat(document.getElementById('s-price').value) || 0;
+  const nights = parseInt(document.getElementById('s-nights').value) || 1;
+
+  const costExTax = (['c-food','c-amenity','c-clean','c-other']
+    .reduce((s,id) => s + (parseFloat(document.getElementById(id).value)||0), 0)) / 1.1;
+
+  const listTotal = price * nights;
+  const listExTax = listTotal / 1.1;
+  let sellTotal = listTotal;
+  let rows = [];
+  let couponAmt = 0;        // 施設負担クーポン原資（楽天以外は0）
+  let rakutenCouponAmt = 0; // 楽天原資クーポン（楽天以外は0）
+
+  // ── 楽天 ──────────────────────────────
+  if (ota === 'rakuten') {
+    const camp    = document.getElementById('r-camp').value;
+    const payment = document.getElementById('r-pay').value;
+    const cardPct = parseFloat(document.getElementById('r-card').value) / 100;
+
+    // ── キャンペーン別の割引率定義 ──
+    // 施設負担：5と0日分（上限¥5,000）
+    const solo5Rate  = { none:0, solo:0.10, f1:0.10, f2:0.10, f3:0.10 };
+    const solo5Limit = { none:0, solo:5000, f1:5000, f2:5000, f3:5000 };
+    // 施設負担：SCW分（上限なし）
+    const scwRate    = { none:0, solo:0,    f1:0.20, f2:0.10, f3:0.10 };
+    // 楽天原資（楽天負担）
+    const rakutenRateMap = { none:0, solo:0.05, f1:0.10, f2:0.07, f3:0.07 };
+    const rakutenRate    = rakutenRateMap[camp];
+
+    if (camp !== 'none') {
+      // 5と0日 施設負担（上限¥5,000）
+      const solo5Amt = Math.min(Math.round(listTotal * solo5Rate[camp]), solo5Limit[camp]);
+      // SCW 施設負担（上限なし）
+      const scwAmt   = Math.round(listTotal * scwRate[camp]);
+      // 施設負担合計
+      couponAmt = solo5Amt + scwAmt;
+      // 楽天原資（楽天負担）
+      rakutenCouponAmt = Math.round(listTotal * rakutenRate);
+      // お客様表示価格 = 定価 - 施設負担合計 - 楽天原資
+      sellTotal = listTotal - couponAmt - rakutenCouponAmt;
+
+      // 5と0日分を表示
+      if (solo5Amt > 0) {
+        rows.push({ lbl: `自社負担割引① 5と0のつく日（10%OFF・上限¥5,000）`, val: -solo5Amt, cls: 'val-plus' });
+      }
+      // SCW分を表示
+      if (scwAmt > 0) {
+        rows.push({ lbl: `自社負担割引② SCW（${(scwRate[camp]*100).toFixed(0)}%OFF）`, val: -scwAmt, cls: 'val-plus' });
+      }
+    }
+    const sellExTax = sellTotal / 1.1;
+
+    // 基本コミッション（割引前税抜売上ベース）
+    const soukaku = Math.round(listExTax * (multi ? 0.0825 : 0.07) * 1.1);
+    // ボーナスプログラム（割引前税抜×3%・常時）
+    const bonus   = Math.round(listExTax * 0.03);
+    // 販促システム利用料（割引前税抜×5%・キャンペーン参加時のみ）
+    const hansoku = camp !== 'none' ? Math.round(listExTax * 0.05) : 0;
+    // カード決済手数料（割引後税抜売上ベース）
+    const card    = payment === 'card' ? Math.round(sellExTax * cardPct * 1.1) : 0;
+    // ポイント原資（割引後税込×1%・不課税）
+    const point   = Math.round(sellTotal * 0.01);
+
+    rows.push(
+      { lbl: `基本コミッション（${multi?'2名以上8.25':'1名7'}%・割引前税抜ベース）`, val: soukaku, cls:'val-minus' },
+      { lbl: 'ボーナスプログラム（割引前税抜×3%・常時）', val: bonus, cls:'val-minus' },
+      { lbl: '販促システム利用料（割引前税抜×5%・キャンペーン参加時のみ）', val: hansoku, cls:'val-minus' },
+      { lbl: payment==='card' ? `事前カード決済手数料（${cardPct*100}%・割引後税抜ベース）`:'カード決済（現地）', val: card, cls:'val-minus' },
+      { lbl: 'ポイント原資（割引後税込×1%・不課税）', val: point, cls:'val-minus', notax: true }
+    );
+
+  // ── じゃらん ──────────────────────────
+  } else if (ota === 'jalan') {
+    const camp   = document.getElementById('j-camp').value;
+    const pay    = document.getElementById('j-pay').value;
+    const coupon = parseFloat(document.getElementById('j-coupon').value) || 0;
+
+    const discRate = (camp === 'sw' || camp === 'otoku') ? 0.05 : 0;
+    if (discRate > 0) {
+      const discAmt = Math.round(listTotal * discRate);
+      sellTotal = listTotal - discAmt;
+      rows.push({ lbl: 'キャンペーン割引（5%）', val: -discAmt, cls:'val-plus' });
+    }
+    const sellExTax = sellTotal / 1.1;
+
+    const kihon    = Math.round(sellExTax * (multi ? 0.08 : 0.06) * 1.1);
+    const point    = Math.round(sellTotal * 0.01);
+    const hansoku  = Math.round(sellExTax * 0.01 * 1.1);
+    const card     = pay === 'card' ? Math.round(sellExTax * 0.015 * 1.1 + 15) : 0;
+    const couponSys = (camp==='sw'||camp==='otoku') ? Math.round(listTotal * 0.03 / 1.1 * 1.1) : 0;
+
+    rows.push(
+      { lbl: `基本手数料（${multi?'8':'6'}%・課税）`, val: kihon, cls:'val-minus' },
+      { lbl: 'ポイント付与料Ponta（1%・不課税）', val: point, cls:'val-minus', notax: true },
+      { lbl: '販促プログラム料（1%・課税）', val: hansoku, cls:'val-minus' },
+      { lbl: pay==='card'?'事前決済手数料（1.5%+15円）':'事前決済手数料（現地・なし）', val: card, cls:'val-minus' },
+      { lbl: '販促クーポンシステム利用料（定価税込×3%÷1.1）', val: couponSys, cls:'val-minus' },
+      { lbl: 'クーポン原資（不課税）', val: coupon, cls:'val-minus', notax: true }
+    );
+
+  // ── 一休 ──────────────────────────────
+  } else {
+    const camp     = document.getElementById('i-camp').value;
+    const cardPct  = parseFloat(document.getElementById('i-card').value) / 100;
+    const boostPct = parseFloat(document.getElementById('i-boost').value) / 100;
+    const sellExTax = sellTotal / 1.1;
+
+    const sysRate = camp === 'yahoo' ? 0.135 : 0.10;
+    const sys   = Math.round(sellExTax * sysRate * 1.1);
+    const card  = Math.round(sellExTax * cardPct * 1.1);
+    const boost = boostPct > 0 ? Math.round(sellExTax * boostPct * 1.1) : 0;
+    const ptMap = { h24:0.10, natsu:0.05, select:0.10 };
+    const ptRate = ptMap[camp] || 0;
+    const point = ptRate > 0 ? Math.round(sellTotal * ptRate) : 0;
+
+    rows.push(
+      { lbl: `システム利用料（${(sysRate*100).toFixed(1)}%・課税）`, val: sys, cls:'val-minus' },
+      { lbl: `カード決済手数料（${(cardPct*100).toFixed(1)}%・課税）`, val: card, cls:'val-minus' }
+    );
+    if (boost > 0) rows.push({ lbl: `ブーストプログラム（${(boostPct*100).toFixed(1)}%・課税）`, val: boost, cls:'val-minus' });
+    if (point > 0) rows.push({ lbl: 'ポイント付与原資', val: point, cls:'val-minus' });
+    rows.push({ lbl: '予約DLシステム利用料', val: 0, note: '¥5,500／月（月額固定・この計算には含まず）' });
+  }
+
+  // 集計
+  const totalFee      = rows.filter(r => !r.note && r.val > 0).reduce((s,r) => s + r.val, 0);
+  const couponAmtExTax = couponAmt / 1.1; // 施設負担クーポン原資（税抜）
+  // 粗利 = 定価税抜 - 手数料合計税抜 - 自社クーポン原資税抜 - 変動原価（楽天原資は粗利に影響しない）
+  const grossProfit   = listExTax - totalFee / 1.1 - couponAmtExTax - costExTax;
+  const profitRate  = listExTax > 0 ? (grossProfit / listExTax * 100).toFixed(1) : 0;
+
+  // 手数料明細HTML（課税/不課税バッジ付き・スクショ準拠）
+  const taxBadge    = '<span class="badge-tax">課税</span>';
+  const notaxBadge  = '<span class="badge-notax">不課税</span>';
+  const feeDetailHtml = rows.map(r => {
+    if (r.note) {
+      return `<div class="res-row sub"><span>${r.lbl} <span class="res-val-gray" style="font-size:11px;">${r.note}</span></span><span class="res-val-gray">—</span></div>`;
+    }
+    if (r.val <= 0) return '';
+    const badge = r.notax ? notaxBadge : taxBadge;
+    return `<div class="res-row sub"><span>${r.lbl}${badge}</span><span class="res-val-red">¥${Math.round(r.val/1.1).toLocaleString()}</span></div>`;
+  }).join('');
+
+  // 変動原価明細HTML
+  const costItems = [
+    { lbl:'食材費',    val:(parseFloat(document.getElementById('c-food').value)||0)/1.1 },
+    { lbl:'アメニティ', val:(parseFloat(document.getElementById('c-amenity').value)||0)/1.1 },
+    { lbl:'清掃費',    val:(parseFloat(document.getElementById('c-clean').value)||0)/1.1 },
+    { lbl:'その他',    val:(parseFloat(document.getElementById('c-other').value)||0)/1.1 },
+  ];
+  const costDetailHtml = costItems.map(c =>
+    `<div class="res-row sub"><span>${c.lbl}</span><span class="res-val-gray">¥${Math.round(c.val).toLocaleString()}</span></div>`
+  ).join('');
+
+  // 万表示ヘルパー（スクショ準拠）
+  const yen = v => '¥' + Math.round(v).toLocaleString();
+
+  document.getElementById('sim-result').innerHTML = `
+  <div class="res-wrap">
+    <div class="res-title">計算結果</div>
+    <div class="res-kpi">
+      <div class="res-kpi-cell">
+        <div class="res-kpi-label">税抜売上</div>
+        <div class="res-kpi-val kpi-blue">${yen(sellTotal/1.1)}</div>
+      </div>
+      <div class="res-kpi-cell">
+        <div class="res-kpi-label">OTA手数料率</div>
+        <div class="res-kpi-val kpi-red">${listExTax>0?((totalFee/1.1+couponAmtExTax)/listExTax*100).toFixed(1):0}%</div>
+      </div>
+      <div class="res-kpi-cell">
+        <div class="res-kpi-label">税抜粗利率</div>
+        <div class="res-kpi-val kpi-green">${profitRate}%</div>
+      </div>
+    </div>
+
+    <div class="res-row">
+      <span>設定金額（定価・税込）</span><span>${yen(listTotal)}</span>
+    </div>
+    ${couponAmt > 0 ? `
+    <div class="res-row sub">
+      <span>うち自社負担割引合計（クーポン原資）</span><span>▲${yen(couponAmt)}</span>
+    </div>` : ''}
+    ${rakutenCouponAmt > 0 ? `
+    <div class="res-row sub" style="color:#27ae60;">
+      <span>うち楽天原資クーポン（楽天負担）</span><span>▲${yen(rakutenCouponAmt)}（粗利に影響なし）</span>
+    </div>` : ''}
+    <div class="res-row highlight">
+      <span>販売金額（お客様表示・税込）</span><span>${yen(sellTotal)}</span>
+    </div>
+    <div class="res-row">
+      <span>税抜売上（販売金額÷1.1）</span><span>${yen(sellTotal/1.1)}</span>
+    </div>
+    <div class="res-row fee-total">
+      <span>手数料合計（税抜）</span><span>▲ ${yen(totalFee/1.1)}</span>
+    </div>
+    ${feeDetailHtml}
+    <div class="res-row cost-total">
+      <span>変動原価合計（税抜換算）</span><span>▲ ${yen(costExTax)}</span>
+    </div>
+    ${costDetailHtml}
+    <div class="res-row profit-row">
+      <span>税抜粗利益</span><span>${yen(grossProfit)}</span>
+    </div>
+    <div class="res-row profit-rate-row">
+      <span>税抜粗利率</span><span>${profitRate}%</span>
+    </div>
+  </div>`;
+}
+
+// ============================================================
+// 価格比較 — デモデータ
+// ============================================================
+// ── 料金マスターデータ（GASから取得・初期値はデモ）──────────
+let GAS_PRICE_DATA = null;   // GASから取得した料金表データ
+let GAS_CALENDAR   = null;   // GASから取得したカレンダーデータ
+let GAS_DATA_LOADED = false;
+
+// GASから料金データを取得
+const GAS_URL = 'https://script.google.com/macros/s/AKfycbw_Ark1SJD9l8vIUZZWF3LYCPd8It2ft3GL1i4SFti_Rs_EcZjAQxrxXutcd72fVnO0Hg/exec';
+
+function loadGASPriceData() {
+  const s = document.createElement('script');
+  s.src = GAS_URL + '?action=all&callback=onGASPriceData';
+  s.onerror = () => console.log('GASデータ取得失敗・デモデータを使用');
+  document.head.appendChild(s);
+}
+
+function onGASPriceData(data) {
+  if (data && data.pricemaster && !data.pricemaster.error) {
+    GAS_PRICE_DATA = data.pricemaster;
+    GAS_CALENDAR   = data.calendar;
+    GAS_DATA_LOADED = true;
+    console.log('✅ GASデータ取得成功');
+    // ステータス表示
+    const el = document.getElementById('pc-data-status');
+    if (el) el.textContent = '✅ 本番データ読込済';
+  }
+}
+
+// チェックイン日のランクをカレンダーから取得
+function getRankForDate(dateStr) {
+  if (!GAS_CALENDAR || !GAS_CALENDAR.days) return null;
+  return GAS_CALENDAR.days[dateStr] || null;
+}
+
+// ランク×部屋×人数から定価を取得
+function getPriceFromGAS(rank, room, guests) {
+  if (!GAS_PRICE_DATA || !rank) return null;
+  const prices = GAS_PRICE_DATA.prices;
+  if (!prices[rank]) return null;
+  // 部屋名の部分一致も試みる
+  const roomKey = Object.keys(prices[rank]).find(r => r.includes(room) || room.includes(r));
+  if (!roomKey) return null;
+  return prices[rank][roomKey][guests + '名'] || null;
+}
+
+// デモ用ROOMS（GASデータがない場合のフォールバック）
+const ROOMS = {
+  '特別室':        { max:6, din:[38000,42000,48000,44000], none:[28000,31000,36000,33000] },
+  '離れ12畳':      { max:4, din:[32000,36000,42000,38000], none:[23000,26000,31000,28000] },
+  '花車':          { max:6, din:[30000,34000,40000,36000], none:[21000,24000,29000,26000] },
+  'デザイナーズ':  { max:4, din:[26000,30000,35000,32000], none:[18000,21000,25000,23000] },
+  'デザイナーズベッド':{ max:4, din:[24000,28000,33000,30000], none:[16000,19000,23000,21000] },
+  '通常町景':      { max:4, din:[20000,23000,28000,25000], none:[14000,16000,19000,17000] },
+  'ベッド付町景':  { max:4, din:[19000,22000,27000,24000], none:[13000,15000,18000,16000] },
+  'ベッド付山景':  { max:4, din:[20000,23000,28000,25000], none:[14000,16000,19000,17000] },
+  '通常山景':      { max:4, din:[22000,25000,30000,27000], none:[15000,17000,21000,19000] },
+};
+const GUEST_DISC = { 1:0, 2:0, 3:0.03, 4:0.05, 5:0.08, 6:0.10 };
+
+// ページ読み込み時にGASデータを取得
+document.addEventListener('DOMContentLoaded', () => { loadGASPriceData(); });
+const OTAS = [
+  { id:'rakuten', name:'楽天トラベル', color:'#c0392b', emoji:'🔴',
+    fee:0.0825, card:0.019, point:0.01,
+    discounts:[
+      { name:'早割28', rate:0.10, type:'early', days:28, grp:'A' },
+      { name:'5と0のつく日', rate:0.05, type:'dom', grp:'B' },
+      { name:'SCW(枠②)', rate:0.10, type:'always', grp:'C' },
+    ]},
+  { id:'jalan', name:'じゃらんnet', color:'#2980b9', emoji:'🔵',
+    fee:0.08, card:0.015, point:0.01,
+    discounts:[
+      { name:'早割21', rate:0.10, type:'early', days:21, grp:'A' },
+      { name:'お得な10日間', rate:0.05, type:'always', grp:'B' },
+    ]},
+  { id:'ikyu', name:'一休.com', color:'#b7950b', emoji:'🟡',
+    fee:0.10, card:0.038, point:0,
+    discounts:[
+      { name:'早割30', rate:0.10, type:'early', days:30, grp:'A' },
+    ]},
+  { id:'yahoo', name:'Yahoo!トラベル', color:'#c0392b', emoji:'🟠',
+    fee:0.135, card:0.038, point:0, discounts:[]},
+  { id:'rurubu', name:'るるぶトラベル', color:'#e67e22', emoji:'🟤',
+    fee:0.08, card:0.02, point:0.01,
+    discounts:[{ name:'早割14', rate:0.07, type:'early', days:14, grp:'A' }]},
+  { id:'yukoyuko', name:'ゆこゆこ', color:'#27ae60', emoji:'🟢',
+    fee:0.10, card:0.02, point:0.01,
+    discounts:[{ name:'会員割引', rate:0.05, type:'always', grp:'A' }]},
+  { id:'own', name:'自社サイト', color:'#6c3483', emoji:'🏠',
+    fee:0, card:0.033, point:0,
+    discounts:[{ name:'直予約特典', rate:0.05, type:'always', grp:'A' }]},
+];
+
+function calcPC() {
+  const dateStr = document.getElementById('pc-date').value;
+  const nights  = parseInt(document.getElementById('pc-nights').value);
+  const guests  = parseInt(document.getElementById('pc-guests').value);
+  const meal    = document.getElementById('pc-meal').value;
+  const roomSel = document.getElementById('pc-room').value;
+  if (!dateStr) { alert('チェックイン日を入力してください'); return; }
+
+  const checkin = new Date(dateStr);
+  const today   = new Date(); today.setHours(0,0,0,0);
+  const daysAhead = Math.floor((checkin - today) / 86400000);
+  const dow = checkin.getDay();
+  const dowIdx = dow===5?1:dow===6?2:dow===0?3:0;
+  const dom = checkin.getDate();
+  const is5or0 = [5,10,15,20,25,30].includes(dom);
+
+  // ── 定価計算（GASデータ優先・デモデータフォールバック）──
+  const rank = getRankForDate(dateStr); // カレンダーからランク取得
+
+  const candidates = roomSel === 'all' ? Object.keys(ROOMS) : [roomSel];
+  const valid = candidates.filter(r => ROOMS[r] && ROOMS[r].max >= guests);
+  if (!valid.length) {
+    document.getElementById('pc-result').innerHTML = '<div class="section" style="color:#c0392b;">⚠️ 選択した人数に対応できる部屋タイプがありません。</div>';
+    return;
+  }
+  const roomName = valid[0];
+
+  let listPerNight;
+  if (GAS_DATA_LOADED && rank) {
+    // GASデータ（料金表）から定価取得
+    const gasPrice = getPriceFromGAS(rank, roomName, guests);
+    if (gasPrice) {
+      listPerNight = gasPrice;
+    } else {
+      // GASデータにない場合はデモデータ
+      const room = ROOMS[roomName];
+      const basePerPerson = (meal==='din' ? room.din : room.none)[dowIdx];
+      listPerNight = Math.round(basePerPerson * guests * (1 - (GUEST_DISC[guests]||0)));
+    }
+  } else {
+    // デモデータ
+    const room = ROOMS[roomName];
+    const basePerPerson = (meal==='din' ? room.din : room.none)[dowIdx];
+    listPerNight = Math.round(basePerPerson * guests * (1 - (GUEST_DISC[guests]||0)));
+  }
+  const listTotal = listPerNight * nights;
+
+  // データソース表示
+  const dataSource = (GAS_DATA_LOADED && rank) ? `🟢 本番データ（ランク${rank}）` : '🟡 デモデータ';
+
+  const results = OTAS.map(ota => {
+    const applied = [];
+    const usedGrp = new Set();
+    [...ota.discounts].sort((a,b)=>b.rate-a.rate).forEach(d => {
+      if (applied.length >= 3 || usedGrp.has(d.grp)) return;
+      const ok = d.type==='always' || (d.type==='early' && daysAhead>=d.days) || (d.type==='dom' && is5or0);
+      if (ok) { applied.push(d); usedGrp.add(d.grp); }
+    });
+    const totalDisc = applied.reduce((s,d)=>s+d.rate, 0);
+    const sellTotal = Math.round(listTotal * (1 - totalDisc));
+    const sellExTax = sellTotal / 1.1;
+    const feeCost   = Math.round(sellExTax * ota.fee * 1.1);
+    const cardCost  = Math.round(sellExTax * ota.card * 1.1);
+    const ptCost    = Math.round(sellTotal * ota.point);
+    const totalCost = feeCost + cardCost + ptCost;
+    const profit    = sellTotal - totalCost;
+    const profitRate = sellTotal > 0 ? profit / sellTotal : 0;
+    return { ota, sellTotal, applied, feeCost, cardCost, ptCost, totalCost, profit, profitRate, listTotal };
+  }).sort((a,b) => a.sellTotal - b.sellTotal);
+
+  const minP = results[0].sellTotal;
+  const maxP = results[results.length-1].sellTotal;
+  const bestProfit = [...results].sort((a,b)=>b.profitRate-a.profitRate)[0];
+
+  const summaryHtml = `
+  <div class="pc-summary">
+    <div class="pc-card"><div class="lbl">チェックイン</div><div class="val" style="font-size:14px;">${dateStr}</div><div class="sub">${nights}泊 / ${guests}名 / ${meal==='din'?'2食付き':'素泊まり'}</div></div>
+    <div class="pc-card"><div class="lbl">定価合計（税込）</div><div class="val">¥${listTotal.toLocaleString()}</div><div class="sub">${roomName}${roomSel==='all'?'（代表）':''} ${dataSource}</div></div>
+    <div class="pc-card" style="border-color:#f1c40f;"><div class="lbl">最安値</div><div class="val" style="color:#c0392b;">¥${minP.toLocaleString()}</div><div class="sub">${results[0].ota.emoji} ${results[0].ota.name}</div></div>
+    <div class="pc-card" style="border-color:#9ae6b4;"><div class="lbl">最高粗利率</div><div class="val" style="color:#27ae60;">${(bestProfit.profitRate*100).toFixed(1)}%</div><div class="sub">${bestProfit.ota.emoji} ${bestProfit.ota.name}</div></div>
+  </div>`;
+
+  const listHtml = results.map((r, i) => {
+    const rank = i + 1;
+    const cls  = rank<=3 ? `ota-row rank${rank}` : 'ota-row rankN';
+    const tags = r.applied.length
+      ? r.applied.map(d=>`<span class="tag">✓ ${d.name} -${(d.rate*100).toFixed(0)}%</span>`).join('')
+      : '<span class="tag tag-none">割引なし</span>';
+    const profitCls = r.profitRate >= 0.65 ? 'profit-ok' : 'profit-warn';
+    return `
+    <div class="${cls}">
+      <div class="rank-num">${rank}</div>
+      <div>
+        <div class="ota-name" style="color:${r.ota.color};">${r.ota.emoji} ${r.ota.name}</div>
+        <div class="ota-tags">${tags}</div>
+        <div class="ota-fee">手数料¥${r.feeCost.toLocaleString()} + カード¥${r.cardCost.toLocaleString()} + P原資¥${r.ptCost.toLocaleString()} = 計¥${r.totalCost.toLocaleString()}</div>
+      </div>
+      <div>
+        <div class="ota-price" style="color:${r.ota.color};">¥${r.sellTotal.toLocaleString()}</div>
+        <div class="ota-price-label" style="font-size:11px;color:#999;text-align:right;">税込販売価格</div>
+        <div class="ota-profit ${profitCls}">粗利 ¥${r.profit.toLocaleString()}（${(r.profitRate*100).toFixed(1)}%）</div>
+      </div>
+    </div>`;
+  }).join('');
+
+  document.getElementById('pc-result').innerHTML = `
+  ${summaryHtml}
+  <div class="section">
+    <h3>📊 OTA別 販売価格比較（安い順）</h3>
+    <div class="ota-list">${listHtml}</div>
+    <p style="font-size:11px;color:#bbb;margin-top:10px;">※ デモデータによる試算。GAS連携後に実際のマスターデータが反映されます。</p>
+  </div>`;
+}
+
+// ============================================================
+// GAS連携（月次）
+// ============================================================
+function loadGAS() {
+  const s = document.createElement('script');
+  s.src = GAS_URL + '?callback=onGASData';
+  document.head.appendChild(s);
+}
+function onGASData(data) { console.log('GAS data:', data); }
+
+// 初期化
+document.addEventListener('DOMContentLoaded', () => {
+  const d = new Date();
+  const pad = n => String(n).padStart(2,'0');
+  document.getElementById('pc-date').value = `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`;
+});
+</script>
+</body>
+</html>
